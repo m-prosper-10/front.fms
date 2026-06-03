@@ -1,14 +1,18 @@
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, Pencil } from "lucide-react";
 import { buttonVariants } from "../../components/button";
+import { useAuth } from "../auth/auth.store";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { canManageExtinguishers } from "../../lib/permissions";
 import { sampleExtinguishers } from "./extinguisher.types";
 
 export function ExtinguisherDetailPage() {
+  const { user } = useAuth();
   const { id } = useParams();
   const extinguisher = sampleExtinguishers.find((item) => item.id === id);
+  const canManage = canManageExtinguishers(user?.role ?? "user");
 
   if (!extinguisher) {
     return (
@@ -38,10 +42,15 @@ export function ExtinguisherDetailPage() {
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
-            <Link to={`/extinguishers/${extinguisher.id}/edit`} className={buttonVariants()}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
+            {canManage ? (
+              <Link
+                to={`/extinguishers/${extinguisher.id}/edit`}
+                className={buttonVariants()}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            ) : null}
           </div>
         }
       />

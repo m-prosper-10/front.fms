@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { appConfig } from "../../lib/config";
 import type { UserRole } from "../../lib/permissions";
 import { login as loginRequest, logout as logoutRequest, refreshToken as refreshTokenRequest, register as registerRequest, validateToken as validateTokenRequest } from "./auth.api";
 import type { AuthSession, AuthUser, LoginInput, RegisterInput } from "./auth.types";
 
-const ACCESS_TOKEN_KEY = "fms_access_token";
-const REFRESH_TOKEN_KEY = "fms_refresh_token";
+const ACCESS_TOKEN_KEY = appConfig.authStorageKeys.accessToken;
+const REFRESH_TOKEN_KEY = appConfig.authStorageKeys.refreshToken;
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -106,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         if (storedSession?.accessToken) {
-          const validation = await validateTokenRequest(storedSession.accessToken);
+          const validation = await validateTokenRequest();
 
           if (isMounted) {
             setUser(validation.user);
