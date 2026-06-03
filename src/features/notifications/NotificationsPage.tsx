@@ -208,13 +208,6 @@ export function NotificationsPage() {
               <Badge tone="muted">{filteredNotifications.length} total</Badge>
               <Badge tone="muted">{unreadCount} unread</Badge>
             </div>
-            <div className="grid gap-2 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-3">
-              {(meta.endpoints || []).map((endpoint) => (
-                <div key={endpoint} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                  {endpoint}
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
       ) : (

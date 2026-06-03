@@ -185,7 +185,9 @@ export function InspectionListPage() {
             <p className="font-medium text-slate-900">{ROLE_LABELS[user?.role ?? "user"]}</p>
             <p className="text-slate-500">
               {canSchedule
-                ? "Can schedule inspections."
+                ? user?.role === "user"
+                  ? "Can schedule inspections and view only personal inspection records."
+                  : "Can schedule inspections."
                 : canManage
                   ? "Can manage and complete inspections."
                   : "View-only access to inspections."}

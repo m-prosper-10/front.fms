@@ -94,7 +94,7 @@ export function InspectionDetailPage() {
 
   useEffect(() => {
     void loadRecord();
-  }, [id]);
+  }, [id, user?.id, user?.role]);
 
   const inspector = inspectors.find((item) => item.id === record?.assignedInspectorId);
 
