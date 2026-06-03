@@ -78,7 +78,7 @@ export function canAccessAdminArea(role: UserRole) {
 }
 
 export function canScheduleInspections(role: UserRole) {
-  return role === "admin" || role === "inspector";
+  return role === "admin" || role === "inspector" || role === "user";
 }
 
 export function canManageInspections(role: UserRole) {
@@ -102,9 +102,9 @@ export function canExportReports(role: UserRole) {
 }
 
 export function canViewNotificationMeta(role: UserRole) {
-  return role === "admin" || role === "inspector";
+  return role === "admin" || role === "inspector" || role === "user";
 }
 
 export function canViewInspectorDirectory(role: UserRole) {
-  return role === "admin" || role === "inspector";
+  return role === "admin" || role === "inspector" || role === "user";
 }

@@ -61,6 +61,11 @@ export function InspectionDetailPage() {
 
     try {
       const inspection = await getInspection(id);
+
+      if (user?.role === "user" && inspection.scheduledBy !== user.id) {
+        throw new ApiError(404, "Inspection not found");
+      }
+
       setRecord(inspection);
 
       const related = await Promise.allSettled([

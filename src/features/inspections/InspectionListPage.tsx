@@ -62,6 +62,8 @@ export function InspectionListPage() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   async function loadData() {
     setLoading(true);
@@ -89,6 +91,10 @@ export function InspectionListPage() {
     void loadData();
   }, [user?.role]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [query, statusFilter, user?.role]);
+
   const extinguisherMap = useMemo(
     () => new Map(extinguishers.map((item) => [item.id, item])),
     [extinguishers]
@@ -102,6 +108,10 @@ export function InspectionListPage() {
   const filteredRecords = useMemo(
     () =>
       records.filter((item) => {
+        if (user?.role === "user" && item.scheduledBy !== user.id) {
+          return false;
+        }
+
         const normalizedQuery = query.toLowerCase();
         const extinguisher = extinguisherMap.get(item.extinguisherId);
         const assignedInspector = inspectorMap.get(item.assignedInspectorId);
@@ -116,7 +126,14 @@ export function InspectionListPage() {
 
         return matchesQuery && matchesStatus;
       }),
-    [extinguisherMap, inspectorMap, query, records, statusFilter]
+    [extinguisherMap, inspectorMap, query, records, statusFilter, user?.id, user?.role]
+  );
+
+  const totalPages = Math.max(Math.ceil(filteredRecords.length / pageSize), 1);
+  const currentPage = Math.min(page, totalPages);
+  const pagedRecords = useMemo(
+    () => filteredRecords.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredRecords]
   );
 
   async function handleDelete(id: string) {
@@ -247,7 +264,7 @@ export function InspectionListPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRecords.map((item) => {
+                  {pagedRecords.map((item) => {
                     const extinguisher = extinguisherMap.get(item.extinguisherId);
                     const inspector = inspectorMap.get(item.assignedInspectorId);
 
@@ -312,6 +329,34 @@ export function InspectionListPage() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm text-slate-500">
+              <p>
+                Showing <span className="font-medium text-slate-900">{pagedRecords.length}</span> of{" "}
+                <span className="font-medium text-slate-900">{filteredRecords.length}</span> inspections
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((current) => Math.max(current - 1, 1))}
+                  disabled={currentPage <= 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-xs text-slate-500">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
