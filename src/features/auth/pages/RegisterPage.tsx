@@ -244,7 +244,7 @@ export function RegisterPage() {
           >
             Back to sign in
           </Link>
-          <span>Backend: {appConfig.authBaseUrl}</span>
+          <span>Gateway: {appConfig.apiBaseUrl}</span>
         </div>
       </div>
     </main>
