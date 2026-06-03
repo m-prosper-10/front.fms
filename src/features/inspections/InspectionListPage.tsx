@@ -22,7 +22,7 @@ import { deleteInspection, listInspections } from "./inspection.api";
 import type { InspectionRecord, InspectionStatus } from "./inspection.types";
 import { listExtinguishers } from "../extinguishers/extinguisher.api";
 import type { FireExtinguisher } from "../extinguishers/extinguisher.types";
-import { listUsers } from "../users/users.api";
+import { listInspectors } from "../users/users.api";
 import type { UserRecord } from "../users/users.types";
 
 function formatDate(value: string | null | undefined) {
@@ -49,7 +49,7 @@ export function InspectionListPage() {
   const canComplete = canCompleteInspections(user?.role ?? "user");
   const [records, setRecords] = useState<InspectionRecord[]>([]);
   const [extinguishers, setExtinguishers] = useState<FireExtinguisher[]>([]);
-  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [inspectors, setInspectors] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -61,18 +61,14 @@ export function InspectionListPage() {
     setError(null);
 
     try {
-      const promises: Promise<unknown>[] = [listInspections(), listExtinguishers()];
-
-      if (user?.role === "admin") {
-        promises.push(listUsers());
-      }
-
-      const [inspectionsResponse, extinguishersResponse, usersResponse] = await Promise.all(promises);
+      const [inspectionsResponse, extinguishersResponse, inspectorsResponse] = await Promise.all([
+        listInspections(),
+        listExtinguishers(),
+        listInspectors()
+      ]);
       setRecords(inspectionsResponse as InspectionRecord[]);
       setExtinguishers(extinguishersResponse as FireExtinguisher[]);
-      if (usersResponse) {
-        setUsers(usersResponse as UserRecord[]);
-      }
+      setInspectors(inspectorsResponse as UserRecord[]);
     } catch (requestError) {
       setError(
         requestError instanceof ApiError ? requestError.message : "Unable to load inspections."
@@ -91,9 +87,9 @@ export function InspectionListPage() {
     [extinguishers]
   );
 
-  const userMap = useMemo(
-    () => new Map(users.map((item) => [item.id, item])),
-    [users]
+  const inspectorMap = useMemo(
+    () => new Map(inspectors.map((item) => [item.id, item])),
+    [inspectors]
   );
 
   const filteredRecords = useMemo(
@@ -101,7 +97,7 @@ export function InspectionListPage() {
       records.filter((item) => {
         const normalizedQuery = query.toLowerCase();
         const extinguisher = extinguisherMap.get(item.extinguisherId);
-        const assignedInspector = userMap.get(item.assignedInspectorId);
+        const assignedInspector = inspectorMap.get(item.assignedInspectorId);
         const matchesQuery =
           item.id.toLowerCase().includes(normalizedQuery) ||
           item.extinguisherId.toLowerCase().includes(normalizedQuery) ||
@@ -112,7 +108,7 @@ export function InspectionListPage() {
 
         return matchesQuery && matchesStatus;
       }),
-    [extinguisherMap, query, records, statusFilter, userMap]
+    [extinguisherMap, inspectorMap, query, records, statusFilter]
   );
 
   async function handleDelete(id: string) {
@@ -245,7 +241,7 @@ export function InspectionListPage() {
                 <TableBody>
                   {filteredRecords.map((item) => {
                     const extinguisher = extinguisherMap.get(item.extinguisherId);
-                    const inspector = userMap.get(item.assignedInspectorId);
+                    const inspector = inspectorMap.get(item.assignedInspectorId);
 
                     return (
                       <TableRow key={item.id}>

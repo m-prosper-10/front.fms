@@ -12,6 +12,8 @@ import { getExtinguisher } from "../extinguishers/extinguisher.api";
 import type { FireExtinguisher } from "../extinguishers/extinguisher.types";
 import { deleteInspection, getInspection, listMaintenanceByExtinguisher } from "./inspection.api";
 import type { InspectionRecord, MaintenanceRecord } from "./inspection.types";
+import { listInspectors } from "../users/users.api";
+import type { UserRecord } from "../users/users.types";
 
 function formatDate(value: string | null | undefined) {
   if (!value) {
@@ -35,6 +37,7 @@ export function InspectionDetailPage() {
   const canComplete = canCompleteInspections(user?.role ?? "user");
   const [record, setRecord] = useState<InspectionRecord | null>(null);
   const [extinguisher, setExtinguisher] = useState<FireExtinguisher | null>(null);
+  const [inspectors, setInspectors] = useState<UserRecord[]>([]);
   const [maintenance, setMaintenance] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +60,8 @@ export function InspectionDetailPage() {
 
       const related = await Promise.allSettled([
         getExtinguisher(inspection.extinguisherId),
-        listMaintenanceByExtinguisher(inspection.extinguisherId)
+        listMaintenanceByExtinguisher(inspection.extinguisherId),
+        listInspectors()
       ]);
 
       if (related[0].status === "fulfilled") {
@@ -65,6 +69,9 @@ export function InspectionDetailPage() {
       }
       if (related[1].status === "fulfilled") {
         setMaintenance(related[1].value);
+      }
+      if (related[2].status === "fulfilled") {
+        setInspectors(related[2].value);
       }
     } catch (requestError) {
       setError(
@@ -78,6 +85,8 @@ export function InspectionDetailPage() {
   useEffect(() => {
     void loadRecord();
   }, [id]);
+
+  const inspector = inspectors.find((item) => item.id === record?.assignedInspectorId);
 
   async function handleDelete() {
     if (!id || !record) return;
@@ -184,7 +193,9 @@ export function InspectionDetailPage() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Inspector</p>
-              <p className="text-sm font-medium text-slate-900">{record.assignedInspectorId}</p>
+              <p className="text-sm font-medium text-slate-900">
+                {inspector ? `${inspector.firstName} ${inspector.lastName}` : record.assignedInspectorId}
+              </p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Scheduled by</p>
