@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Lock, Mail, User } from "lucide-react";
 import { Button, buttonVariants } from "../../../components/button";
@@ -39,7 +39,7 @@ export function RegisterPage() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
     setFieldErrors({});

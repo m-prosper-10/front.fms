@@ -1,5 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { appConfig } from "../../lib/config";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { UserRole } from "../../lib/permissions";
 import { login as loginRequest, logout as logoutRequest, refreshToken as refreshTokenRequest, register as registerRequest, validateToken as validateTokenRequest } from "./auth.api";
 import type { AuthSession, AuthUser, LoginInput, RegisterInput } from "./auth.types";
@@ -52,7 +51,7 @@ function clearStoredSession() {
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -82,9 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    const session = await refreshTokenRequest(storedRefreshToken);
-    applySession(session);
-    return session;
+    try {
+      const session = await refreshTokenRequest(storedRefreshToken);
+      applySession(session);
+      return session;
+    } catch {
+      resetSession();
+      return null;
+    }
   }
 
   useEffect(() => {
@@ -167,28 +171,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedRefreshToken) {
         await logoutRequest(storedRefreshToken);
       }
+    } catch {
+      // best-effort logout; local session is cleared below either way
     } finally {
       resetSession();
     }
   }
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      status,
-      isAuthenticated: status === "authenticated",
-      user,
-      accessToken,
-      refreshToken,
-      login,
-      register,
-      logout,
-      refreshSession,
-      hasRole: (roles) => Boolean(user && roles.includes(user.role))
-    }),
-    [accessToken, refreshSession, refreshToken, status, user]
+  return (
+    <AuthContext.Provider
+      value={{
+        status,
+        isAuthenticated: status === "authenticated",
+        user,
+        accessToken,
+        refreshToken,
+        login,
+        register,
+        logout,
+        refreshSession,
+        hasRole: (roles) => Boolean(user && roles.includes(user.role))
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
@@ -200,5 +207,3 @@ export function useAuth() {
 
   return context;
 }
-
-export { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, appConfig };
