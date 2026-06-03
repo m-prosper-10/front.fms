@@ -252,114 +252,116 @@ export function InspectionListPage() {
               {error}
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-slate-200">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead>Inspection</TableHead>
-                    <TableHead>Extinguisher</TableHead>
-                    <TableHead>Inspector</TableHead>
-                    <TableHead>Scheduled</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Result</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pagedRecords.map((item) => {
-                    const extinguisher = extinguisherMap.get(item.extinguisherId);
-                    const inspector = inspectorMap.get(item.assignedInspectorId);
+            <>
+              <div className="overflow-hidden rounded-lg border border-slate-200">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50">
+                      <TableHead>Inspection</TableHead>
+                      <TableHead>Extinguisher</TableHead>
+                      <TableHead>Inspector</TableHead>
+                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Result</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pagedRecords.map((item) => {
+                      const extinguisher = extinguisherMap.get(item.extinguisherId);
+                      const inspector = inspectorMap.get(item.assignedInspectorId);
 
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium text-slate-900">
-                          {item.id.slice(0, 8)}
-                        </TableCell>
-                        <TableCell>
-                          {extinguisher ? extinguisher.serialNumber : item.extinguisherId}
-                        </TableCell>
-                        <TableCell>
-                          {inspector
-                            ? `${inspector.firstName} ${inspector.lastName}`
-                            : item.assignedInspectorId}
-                        </TableCell>
-                        <TableCell>{formatDateTime(item.inspectionDate, item.inspectionTime)}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={item.status} />
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={item.result ?? "pending"} />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              to={`/inspections/${item.id}`}
-                              className={buttonVariants({ variant: "ghost", size: "sm" })}
-                            >
-                              View
-                            </Link>
-                            {canManage ? (
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium text-slate-900">
+                            {item.id.slice(0, 8)}
+                          </TableCell>
+                          <TableCell>
+                            {extinguisher ? extinguisher.serialNumber : item.extinguisherId}
+                          </TableCell>
+                          <TableCell>
+                            {inspector
+                              ? `${inspector.firstName} ${inspector.lastName}`
+                              : item.assignedInspectorId}
+                          </TableCell>
+                          <TableCell>{formatDateTime(item.inspectionDate, item.inspectionTime)}</TableCell>
+                          <TableCell>
+                            <StatusBadge status={item.status} />
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={item.result ?? "pending"} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-2">
                               <Link
-                                to={`/inspections/${item.id}/edit`}
+                                to={`/inspections/${item.id}`}
                                 className={buttonVariants({ variant: "ghost", size: "sm" })}
                               >
-                                Edit
+                                View
                               </Link>
-                            ) : null}
-                            {canComplete ? (
-                              <Link
-                                to={`/inspections/${item.id}/complete`}
-                                className={buttonVariants({ variant: "ghost", size: "sm" })}
-                              >
-                                Complete
-                              </Link>
-                            ) : null}
-                            {canManage ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => void handleDelete(item.id)}
-                                disabled={deletingId === item.id}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm text-slate-500">
-              <p>
-                Showing <span className="font-medium text-slate-900">{pagedRecords.length}</span> of{" "}
-                <span className="font-medium text-slate-900">{filteredRecords.length}</span> inspections
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((current) => Math.max(current - 1, 1))}
-                  disabled={currentPage <= 1}
-                >
-                  Previous
-                </Button>
-                <span className="text-xs text-slate-500">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
-                  disabled={currentPage >= totalPages}
-                >
-                  Next
-                </Button>
+                              {canManage ? (
+                                <Link
+                                  to={`/inspections/${item.id}/edit`}
+                                  className={buttonVariants({ variant: "ghost", size: "sm" })}
+                                >
+                                  Edit
+                                </Link>
+                              ) : null}
+                              {canComplete ? (
+                                <Link
+                                  to={`/inspections/${item.id}/complete`}
+                                  className={buttonVariants({ variant: "ghost", size: "sm" })}
+                                >
+                                  Complete
+                                </Link>
+                              ) : null}
+                              {canManage ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => void handleDelete(item.id)}
+                                  disabled={deletingId === item.id}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
-            </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm text-slate-500">
+                <p>
+                  Showing <span className="font-medium text-slate-900">{pagedRecords.length}</span> of{" "}
+                  <span className="font-medium text-slate-900">{filteredRecords.length}</span> inspections
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((current) => Math.max(current - 1, 1))}
+                    disabled={currentPage <= 1}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-xs text-slate-500">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
+                    disabled={currentPage >= totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

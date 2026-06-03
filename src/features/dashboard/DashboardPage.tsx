@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "../../components/button";
+import { buttonVariants } from "../../components/button";
 import { Badge } from "../../components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { LoadingState } from "../../components/shared/LoadingState";
@@ -487,6 +489,20 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {user?.role === "user" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick action</CardTitle>
+            <CardDescription>Start a new inspection request from here.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link to="/inspections/new" className={buttonVariants()}>
+              Schedule inspection
+            </Link>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {canViewReporting ? (
         <section className="space-y-4">

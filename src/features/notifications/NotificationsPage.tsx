@@ -10,7 +10,6 @@ import { PageHeader } from "../../components/shared/PageHeader";
 import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { ApiError } from "../../lib/api";
-import { appConfig } from "../../lib/config";
 import { canViewNotificationMeta } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
 import type { NotificationModuleMeta, NotificationType, PublicNotification } from "./notifications.types";
@@ -199,7 +198,7 @@ export function NotificationsPage() {
           <CardHeader>
             <CardTitle>Notification module</CardTitle>
             <CardDescription>
-              {meta.module} is {meta.status} at {appConfig.apiBaseUrl}
+              {meta.module} is {meta.status}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
