@@ -39,7 +39,7 @@ export const NAV_ITEMS = [
     label: "Reports",
     path: "/reports",
     icon: BarChart3,
-    roles: ["admin", "inspector", "user"] as UserRole[]
+    roles: ["admin", "inspector"] as UserRole[]
   },
   {
     label: "Users",
@@ -78,7 +78,7 @@ export function canAccessAdminArea(role: UserRole) {
 }
 
 export function canScheduleInspections(role: UserRole) {
-  return role === "admin" || role === "user";
+  return role === "admin" || role === "inspector";
 }
 
 export function canManageInspections(role: UserRole) {
@@ -94,7 +94,7 @@ export function canManageMaintenance(role: UserRole) {
 }
 
 export function canAccessReporting(role: UserRole) {
-  return role === "admin" || role === "inspector" || role === "user";
+  return role === "admin" || role === "inspector";
 }
 
 export function canExportReports(role: UserRole) {
@@ -102,5 +102,9 @@ export function canExportReports(role: UserRole) {
 }
 
 export function canViewNotificationMeta(role: UserRole) {
-  return role === "admin" || role === "inspector" || role === "user";
+  return role === "admin" || role === "inspector";
+}
+
+export function canViewInspectorDirectory(role: UserRole) {
+  return role === "admin" || role === "inspector";
 }

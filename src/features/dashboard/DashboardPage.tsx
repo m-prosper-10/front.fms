@@ -10,6 +10,10 @@ import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { ApiError } from "../../lib/api";
 import { ROLE_LABELS, canAccessReporting, canManageExtinguishers } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
+import { listExtinguishers } from "../extinguishers/extinguisher.api";
+import type { FireExtinguisher } from "../extinguishers/extinguisher.types";
+import { listInspections } from "../inspections/inspection.api";
+import type { InspectionRecord } from "../inspections/inspection.types";
 import type { DashboardReport, ReportModuleMeta } from "../reports/reports.types";
 import type { NotificationModuleMeta, PublicNotification } from "../notifications/notifications.types";
 import {
@@ -23,6 +27,8 @@ type DashboardData = {
   report: DashboardReport | null;
   notificationMeta: NotificationModuleMeta | null;
   notifications: PublicNotification[];
+  extinguishers: FireExtinguisher[];
+  inspections: InspectionRecord[];
 };
 
 function formatDateTime(value: string | null | undefined) {
@@ -90,7 +96,9 @@ export function DashboardPage() {
     reportMeta: null,
     report: null,
     notificationMeta: null,
-    notifications: []
+    notifications: [],
+    extinguishers: [],
+    inspections: []
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -121,10 +129,16 @@ export function DashboardPage() {
             reportMeta: reporting.reportMeta,
             report: reporting.dashboard,
             notificationMeta,
-            notifications
+            notifications,
+            extinguishers: [],
+            inspections: []
           });
         } else {
-          const notifications = await loadNotifications();
+          const [extinguishers, inspections, notifications] = await Promise.all([
+            listExtinguishers(),
+            listInspections(),
+            loadNotifications()
+          ]);
 
           if (!mounted) {
             return;
@@ -134,7 +148,9 @@ export function DashboardPage() {
             reportMeta: null,
             report: null,
             notificationMeta: null,
-            notifications
+            notifications,
+            extinguishers,
+            inspections
           });
         }
       } catch (requestError) {
@@ -207,37 +223,20 @@ export function DashboardPage() {
       return [
         {
           title: "Inspection workload",
-          description: "Current inspection distribution for the assigned role.",
+          description: "Current inspection distribution for operational work.",
           data: inspectionStatus
         },
         {
+          title: "Maintenance activity",
+          description: "Maintenance activity pulled from the reporting service.",
+          data: (report.recentMaintenance || []).slice(0, 3).map((item) => ({
+            label: item.actionTaken,
+            value: 1
+          }))
+        },
+        {
           title: "Notification mix",
-          description: "Operational notification categories assigned to this role.",
-          data: notificationTypeChart
-        },
-        {
-          title: "Notification status",
-          description: "Read versus unread items in the inbox.",
-          data: notificationReadChart
-        }
-      ];
-    }
-
-    if (user?.role === "user") {
-      return [
-        {
-          title: "Your reporting snapshot",
-          description: "Read-only operational summary visible to the user role.",
-          data: inventoryStatus
-        },
-        {
-          title: "Notification status",
-          description: "Unread and read items from your backend inbox.",
-          data: notificationReadChart
-        },
-        {
-          title: "Notification categories",
-          description: "All backend notifications visible to this session.",
+          description: "Notification categories in the current session.",
           data: notificationTypeChart
         }
       ];
@@ -260,7 +259,65 @@ export function DashboardPage() {
         data: notificationTypeChart
       }
     ];
-  }, [data.report, notificationReadChart, notificationTypeChart, user?.role]);
+  }, [data.report, notificationTypeChart, user?.role]);
+
+  const userCharts = useMemo(() => {
+    const extinguisherStatus = [
+      {
+        label: "Active",
+        value: data.extinguishers.filter((item) => item.status === "active").length
+      },
+      {
+        label: "Expired",
+        value: data.extinguishers.filter((item) => item.status === "expired").length
+      },
+      {
+        label: "Maintenance",
+        value: data.extinguishers.filter((item) => item.status === "maintenance").length
+      },
+      {
+        label: "Decommissioned",
+        value: data.extinguishers.filter((item) => item.status === "decommissioned").length
+      }
+    ];
+
+    const inspectionStatus = [
+      {
+        label: "Pending",
+        value: data.inspections.filter((item) => item.status === "pending").length
+      },
+      {
+        label: "Completed",
+        value: data.inspections.filter((item) => item.status === "completed").length
+      },
+      {
+        label: "Overdue",
+        value: data.inspections.filter((item) => item.status === "overdue").length
+      },
+      {
+        label: "Cancelled",
+        value: data.inspections.filter((item) => item.status === "cancelled").length
+      }
+    ];
+
+    return [
+      {
+        title: "Inventory status",
+        description: "Your accessible extinguisher inventory snapshot.",
+        data: extinguisherStatus
+      },
+      {
+        title: "Inspection status",
+        description: "Inspection state visible to this session.",
+        data: inspectionStatus
+      },
+      {
+        title: "Notification status",
+        description: "Read versus unread notifications returned by the backend.",
+        data: notificationReadChart
+      }
+    ];
+  }, [data.extinguishers, data.inspections, notificationReadChart]);
 
   function refresh() {
     setRefreshing(true);
