@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
-import { Button } from "../../components/button";
+import { Button, buttonVariants } from "../../components/button";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { Card, CardContent } from "../../components/ui/card";
@@ -23,12 +23,10 @@ export function ExtinguisherListPage() {
         title="Fire Extinguishers"
         description="Track serial numbers, locations, expiry dates, and current status."
         action={
-          <Button asChild={undefined as never}>
-            <Link to="/extinguishers/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add extinguisher
-            </Link>
-          </Button>
+          <Link to="/extinguishers/new" className={buttonVariants()}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add extinguisher
+          </Link>
         }
       />
 
@@ -85,12 +83,18 @@ export function ExtinguisherListPage() {
                     <TableCell>{item.lastInspection}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" asChild={undefined as never}>
-                          <Link to={`/extinguishers/${item.id}`}>View</Link>
-                        </Button>
-                        <Button variant="ghost" size="sm" asChild={undefined as never}>
-                          <Link to={`/extinguishers/${item.id}/edit`}>Edit</Link>
-                        </Button>
+                        <Link
+                          to={`/extinguishers/${item.id}`}
+                          className={buttonVariants({ variant: "ghost", size: "sm" })}
+                        >
+                          View
+                        </Link>
+                        <Link
+                          to={`/extinguishers/${item.id}/edit`}
+                          className={buttonVariants({ variant: "ghost", size: "sm" })}
+                        >
+                          Edit
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import { Button } from "../../components/button";
+import { buttonVariants } from "../../components/button";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { ExtinguisherForm } from "./ExtinguisherForm";
 
@@ -21,12 +21,10 @@ export function ExtinguisherCreatePage() {
         title="Add extinguisher"
         description="Create a new fire extinguisher record for the operations register."
         action={
-          <Button variant="outline" asChild={undefined as never}>
-            <Link to="/extinguishers">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to list
-            </Link>
-          </Button>
+          <Link to="/extinguishers" className={buttonVariants({ variant: "outline" })}>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to list
+          </Link>
         }
       />
 
