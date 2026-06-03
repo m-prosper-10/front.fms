@@ -66,7 +66,7 @@ export function InspectionDetailPage() {
       const related = await Promise.allSettled([
         getExtinguisher(inspection.extinguisherId),
         listMaintenanceByExtinguisher(inspection.extinguisherId),
-        canViewInspectors ? listInspectors() : Promise.resolve([])
+        canViewInspectors ? listInspectors() : Promise.resolve([] as UserRecord[])
       ]);
 
       if (related[0].status === "fulfilled") {

@@ -220,6 +220,10 @@ export function DashboardPage() {
     ];
 
     if (user?.role === "inspector") {
+      const recentActions = Array.from(
+        new Set((report.recentMaintenance || []).map((item) => item.actionTaken))
+      ).slice(0, 4);
+
       return [
         {
           title: "Inspection workload",
@@ -229,15 +233,36 @@ export function DashboardPage() {
         {
           title: "Maintenance activity",
           description: "Maintenance activity pulled from the reporting service.",
-          data: (report.recentMaintenance || []).slice(0, 3).map((item) => ({
-            label: item.actionTaken,
-            value: 1
-          }))
+          data: countBy(report.recentMaintenance || [], (item) => item.actionTaken, recentActions)
         },
         {
           title: "Notification mix",
           description: "Notification categories in the current session.",
           data: notificationTypeChart
+        }
+      ];
+    }
+
+    if (user?.role === "admin") {
+      const recentActions = Array.from(
+        new Set((report.recentMaintenance || []).map((item) => item.actionTaken))
+      ).slice(0, 4);
+
+      return [
+        {
+          title: "Inventory status",
+          description: "Extinguisher distribution across the active fleet.",
+          data: inventoryStatus
+        },
+        {
+          title: "Inspection status",
+          description: "Inspection workflow state across the backend snapshot.",
+          data: inspectionStatus
+        },
+        {
+          title: "Maintenance activity",
+          description: "Maintenance actions tracked in the reporting service.",
+          data: countBy(report.recentMaintenance || [], (item) => item.actionTaken, recentActions)
         }
       ];
     }
@@ -252,11 +277,6 @@ export function DashboardPage() {
         title: "Inspection status",
         description: "Inspections grouped by workflow state.",
         data: inspectionStatus
-      },
-      {
-        title: "Notification categories",
-        description: "Backend notification categories for this session.",
-        data: notificationTypeChart
       }
     ];
   }, [data.report, notificationTypeChart, user?.role]);
@@ -473,7 +493,7 @@ export function DashboardPage() {
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Operational dashboard</h2>
             <p className="text-sm text-slate-500">
-              Snapshot pulled from the reporting-service dashboard endpoint.
+              Snapshot pulled from the reporting backend for this role.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
