@@ -15,3 +15,12 @@ export interface UserRecord {
 }
 
 export interface UserMeRecord extends UserRecord {}
+
+export interface CreateUserInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  status: UserStatus;
+}

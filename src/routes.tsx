@@ -11,6 +11,7 @@ import { ExtinguisherDetailPage } from "./features/extinguishers/ExtinguisherDet
 import { ExtinguisherEditPage } from "./features/extinguishers/ExtinguisherEditPage";
 import { ExtinguisherListPage } from "./features/extinguishers/ExtinguisherListPage";
 import { UserDetailPage } from "./features/users/UserDetailPage";
+import { UserCreatePage } from "./features/users/UserCreatePage";
 import { UsersPage } from "./features/users/UsersPage";
 
 export const router = createBrowserRouter([
@@ -91,6 +92,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowedRoles={["admin"]}>
             <UsersPage />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "users/new",
+        element: (
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <UserCreatePage />
           </ProtectedRoute>
         )
       },
