@@ -39,7 +39,7 @@ export const NAV_ITEMS = [
     label: "Reports",
     path: "/reports",
     icon: BarChart3,
-    roles: ["admin", "inspector", "user"] as UserRole[]
+    roles: ["admin", "inspector"] as UserRole[]
   },
   {
     label: "Users",
@@ -75,4 +75,20 @@ export function canDeleteExtinguishers(role: UserRole) {
 
 export function canAccessAdminArea(role: UserRole) {
   return role === "admin";
+}
+
+export function canScheduleInspections(role: UserRole) {
+  return role === "admin" || role === "user";
+}
+
+export function canManageInspections(role: UserRole) {
+  return role === "admin" || role === "inspector";
+}
+
+export function canCompleteInspections(role: UserRole) {
+  return role === "admin" || role === "inspector";
+}
+
+export function canManageMaintenance(role: UserRole) {
+  return role === "admin" || role === "inspector";
 }
