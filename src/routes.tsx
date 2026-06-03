@@ -10,6 +10,15 @@ import { ExtinguisherCreatePage } from "./features/extinguishers/ExtinguisherCre
 import { ExtinguisherDetailPage } from "./features/extinguishers/ExtinguisherDetailPage";
 import { ExtinguisherEditPage } from "./features/extinguishers/ExtinguisherEditPage";
 import { ExtinguisherListPage } from "./features/extinguishers/ExtinguisherListPage";
+import { InspectionCompletePage } from "./features/inspections/InspectionCompletePage";
+import { InspectionDetailPage } from "./features/inspections/InspectionDetailPage";
+import { InspectionEditPage } from "./features/inspections/InspectionEditPage";
+import { InspectionListPage } from "./features/inspections/InspectionListPage";
+import { InspectionSchedulePage } from "./features/inspections/InspectionSchedulePage";
+import { MaintenanceCreatePage } from "./features/maintenance/MaintenanceCreatePage";
+import { MaintenanceDetailPage } from "./features/maintenance/MaintenanceDetailPage";
+import { MaintenanceEditPage } from "./features/maintenance/MaintenanceEditPage";
+import { MaintenanceListPage } from "./features/maintenance/MaintenanceListPage";
 import { UserDetailPage } from "./features/users/UserDetailPage";
 import { UserCreatePage } from "./features/users/UserCreatePage";
 import { UsersPage } from "./features/users/UsersPage";
@@ -60,21 +69,57 @@ export const router = createBrowserRouter([
       },
       {
         path: "inspections",
+        element: <InspectionListPage />
+      },
+      {
+        path: "inspections/new",
         element: (
-          <SectionPage
-            title="Inspections"
-            description="Inspection scheduling, completion, and follow-up workflows will live here."
-          />
+          <ProtectedRoute allowedRoles={["admin", "user"]}>
+            <InspectionSchedulePage />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "inspections/:id",
+        element: <InspectionDetailPage />
+      },
+      {
+        path: "inspections/:id/edit",
+        element: (
+          <ProtectedRoute allowedRoles={["admin", "inspector"]}>
+            <InspectionEditPage />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "inspections/:id/complete",
+        element: (
+          <ProtectedRoute allowedRoles={["admin", "inspector"]}>
+            <InspectionCompletePage />
+          </ProtectedRoute>
         )
       },
       {
         path: "maintenance",
+        element: <MaintenanceListPage />
+      },
+      {
+        path: "maintenance/new",
         element: (
           <ProtectedRoute allowedRoles={["admin", "inspector"]}>
-            <SectionPage
-              title="Maintenance"
-              description="Maintenance logging and work order tracking will be added here."
-            />
+            <MaintenanceCreatePage />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "maintenance/:id",
+        element: <MaintenanceDetailPage />
+      },
+      {
+        path: "maintenance/:id/edit",
+        element: (
+          <ProtectedRoute allowedRoles={["admin", "inspector"]}>
+            <MaintenanceEditPage />
           </ProtectedRoute>
         )
       },
