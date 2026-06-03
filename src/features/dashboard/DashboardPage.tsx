@@ -8,7 +8,7 @@ import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { ApiError } from "../../lib/api";
-import { ROLE_LABELS, canAccessReporting, canManageExtinguishers } from "../../lib/permissions";
+import { ROLE_LABELS, canAccessReporting } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
 import { listExtinguishers } from "../extinguishers/extinguisher.api";
 import type { FireExtinguisher } from "../extinguishers/extinguisher.types";

@@ -6,7 +6,11 @@ import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { ApiError } from "../../lib/api";
-import { canCompleteInspections, canManageInspections } from "../../lib/permissions";
+import {
+  canCompleteInspections,
+  canManageInspections,
+  canViewInspectorDirectory
+} from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
 import { getExtinguisher } from "../extinguishers/extinguisher.api";
 import type { FireExtinguisher } from "../extinguishers/extinguisher.types";
@@ -35,6 +39,7 @@ export function InspectionDetailPage() {
   const { user } = useAuth();
   const canManage = canManageInspections(user?.role ?? "user");
   const canComplete = canCompleteInspections(user?.role ?? "user");
+  const canViewInspectors = canViewInspectorDirectory(user?.role ?? "user");
   const [record, setRecord] = useState<InspectionRecord | null>(null);
   const [extinguisher, setExtinguisher] = useState<FireExtinguisher | null>(null);
   const [inspectors, setInspectors] = useState<UserRecord[]>([]);
@@ -61,7 +66,7 @@ export function InspectionDetailPage() {
       const related = await Promise.allSettled([
         getExtinguisher(inspection.extinguisherId),
         listMaintenanceByExtinguisher(inspection.extinguisherId),
-        listInspectors()
+        canViewInspectors ? listInspectors() : Promise.resolve([])
       ]);
 
       if (related[0].status === "fulfilled") {

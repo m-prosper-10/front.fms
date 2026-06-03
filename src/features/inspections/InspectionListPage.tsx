@@ -17,7 +17,13 @@ import {
 } from "../../components/ui/table";
 import { useAuth } from "../auth/auth.store";
 import { ApiError } from "../../lib/api";
-import { ROLE_LABELS, canCompleteInspections, canManageInspections, canScheduleInspections } from "../../lib/permissions";
+import {
+  ROLE_LABELS,
+  canCompleteInspections,
+  canManageInspections,
+  canScheduleInspections,
+  canViewInspectorDirectory
+} from "../../lib/permissions";
 import { deleteInspection, listInspections } from "./inspection.api";
 import type { InspectionRecord, InspectionStatus } from "./inspection.types";
 import { listExtinguishers } from "../extinguishers/extinguisher.api";
@@ -47,6 +53,7 @@ export function InspectionListPage() {
   const canSchedule = canScheduleInspections(user?.role ?? "user");
   const canManage = canManageInspections(user?.role ?? "user");
   const canComplete = canCompleteInspections(user?.role ?? "user");
+  const canViewInspectors = canViewInspectorDirectory(user?.role ?? "user");
   const [records, setRecords] = useState<InspectionRecord[]>([]);
   const [extinguishers, setExtinguishers] = useState<FireExtinguisher[]>([]);
   const [inspectors, setInspectors] = useState<UserRecord[]>([]);
@@ -61,14 +68,14 @@ export function InspectionListPage() {
     setError(null);
 
     try {
+      const requests = [listInspections(), listExtinguishers()];
       const [inspectionsResponse, extinguishersResponse, inspectorsResponse] = await Promise.all([
-        listInspections(),
-        listExtinguishers(),
-        listInspectors()
+        ...requests,
+        canViewInspectors ? listInspectors() : Promise.resolve([])
       ]);
       setRecords(inspectionsResponse as InspectionRecord[]);
       setExtinguishers(extinguishersResponse as FireExtinguisher[]);
-      setInspectors(inspectorsResponse as UserRecord[]);
+      setInspectors((inspectorsResponse as UserRecord[]) || []);
     } catch (requestError) {
       setError(
         requestError instanceof ApiError ? requestError.message : "Unable to load inspections."
