@@ -181,28 +181,43 @@ export function NotificationsPage() {
         </Card>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Notification module</CardTitle>
-          <CardDescription>
-            {meta?.module || "notifications"} is {meta?.status || "unknown"} at {appConfig.apiBaseUrl}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <StatusBadge status={meta?.status || "unknown"} />
+      {meta ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification module</CardTitle>
+            <CardDescription>
+              {meta.module} is {meta.status} at {appConfig.apiBaseUrl}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge status={meta.status || "unknown"} />
+              <Badge tone="muted">{filteredNotifications.length} total</Badge>
+              <Badge tone="muted">{unreadCount} unread</Badge>
+            </div>
+            <div className="grid gap-2 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-3">
+              {(meta.endpoints || []).map((endpoint) => (
+                <div key={endpoint} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                  {endpoint}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification overview</CardTitle>
+            <CardDescription>
+              Current notification activity is shown without exposing module metadata for this role.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
             <Badge tone="muted">{filteredNotifications.length} total</Badge>
             <Badge tone="muted">{unreadCount} unread</Badge>
-          </div>
-          <div className="grid gap-2 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-3">
-            {(meta?.endpoints || []).map((endpoint) => (
-              <div key={endpoint} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                {endpoint}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <SimpleBarChart

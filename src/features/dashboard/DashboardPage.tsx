@@ -332,7 +332,7 @@ export function DashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description="Role-aware operations overview backed by the reporting and notification services."
+        description="Role-aware operations overview with charts tailored to the active session."
         action={
           <Button variant="outline" onClick={refresh} disabled={refreshing}>
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -356,11 +356,11 @@ export function DashboardPage() {
         <MetricCard title="Notifications total" value={formatNumber(data.notifications.length)} />
         <MetricCard
           title="Reporting access"
-          value={user?.role === "user" ? "Read-only" : "Enabled"}
+          value={canViewReporting ? "Enabled" : "Hidden"}
           description={
-            user?.role === "user"
-              ? "The user role sees read-only reporting and notifications."
-              : "Reporting service is available to this role."
+            canViewReporting
+              ? "Reporting-service charts are available for this role."
+              : "Reporting-service endpoints are hidden from this role."
           }
         />
       </div>
@@ -369,12 +369,12 @@ export function DashboardPage() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Role view</h2>
           <p className="text-sm text-slate-500">
-            The graphs below are tailored to the active role and sourced from the backend.
+            The graphs below are tailored to the active role and only use backend data allowed to that session.
           </p>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          {reportCharts.map((chart) => (
+          {(canViewReporting ? reportCharts : userCharts).map((chart) => (
             <SimpleBarChart
               key={chart.title}
               title={chart.title}
@@ -405,7 +405,7 @@ export function DashboardPage() {
                   ? "Full reporting and operational control"
                   : user?.role === "inspector"
                     ? "Operational reporting and inspection workflow"
-                    : "Read-only reporting and notifications"}
+                    : "Inventory, inspection, and notification visibility only"}
               </p>
             </div>
             <p className="text-slate-600">
@@ -420,31 +420,50 @@ export function DashboardPage() {
           <CardHeader>
             <CardTitle>Backend modules</CardTitle>
             <CardDescription>
-              Current service status reported by the reporting and notification modules.
+              Current service status visible to this role.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex flex-wrap gap-2">
-              <StatusBadge status={data.reportMeta?.status || "unknown"} />
-              <Badge tone="muted">Reports</Badge>
-              <StatusBadge status={data.notificationMeta?.status || "unknown"} />
-              <Badge tone="muted">Notifications</Badge>
-            </div>
-            <div className="grid gap-2 md:grid-cols-2">
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Reporting module</p>
-                <p className="font-medium text-slate-900">
-                  {data.reportMeta?.module || "reports"} at {data.reportMeta?.status || "unknown"}
-                </p>
+            {canViewReporting ? (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <StatusBadge status={data.reportMeta?.status || "unknown"} />
+                  <Badge tone="muted">Reports</Badge>
+                  <StatusBadge status={data.notificationMeta?.status || "unknown"} />
+                  <Badge tone="muted">Notifications</Badge>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Reporting module</p>
+                    <p className="font-medium text-slate-900">
+                      {data.reportMeta?.module || "reports"} at {data.reportMeta?.status || "unknown"}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">Notification module</p>
+                    <p className="font-medium text-slate-900">
+                      {data.notificationMeta?.module || "notifications"} at{" "}
+                      {data.notificationMeta?.status || "unknown"}
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="grid gap-2 md:grid-cols-2">
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Accessible inventory</p>
+                  <p className="font-medium text-slate-900">
+                    {formatNumber(data.extinguishers.length)} extinguishers in scope
+                  </p>
+                </div>
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Accessible inspections</p>
+                  <p className="font-medium text-slate-900">
+                    {formatNumber(data.inspections.length)} inspection records in scope
+                  </p>
+                </div>
               </div>
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Notification module</p>
-                <p className="font-medium text-slate-900">
-                  {data.notificationMeta?.module || "notifications"} at{" "}
-                  {data.notificationMeta?.status || "unknown"}
-                </p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -498,17 +517,14 @@ export function DashboardPage() {
           </Card>
         </section>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Dashboard access</CardTitle>
-            <CardDescription>
-              Reporting metrics are reserved for admin and inspector roles.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-slate-600">
-            This role still receives notification and workflow updates from the backend.
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Operational snapshot</h2>
+            <p className="text-sm text-slate-500">
+              This role only sees inventory, inspection, and notification data permitted by the backend.
+            </p>
+          </div>
+        </div>
       )}
 
       <section className="space-y-4">
