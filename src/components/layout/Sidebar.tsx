@@ -1,15 +1,16 @@
 import { NavLink } from "react-router-dom";
-import type { UserRole } from "../../lib/permissions";
 import { NAV_ITEMS, ROLE_LABELS, isRoleVisible } from "../../lib/permissions";
 import { cn } from "../../lib/utils";
+import { useAuth } from "../../features/auth/auth.store";
 
 type SidebarProps = {
-  role: UserRole;
   open: boolean;
   onNavigate: () => void;
 };
 
-export function Sidebar({ role, open, onNavigate }: SidebarProps) {
+export function Sidebar({ open, onNavigate }: SidebarProps) {
+  const { user } = useAuth();
+  const role = user?.role ?? "user";
   const items = NAV_ITEMS.filter((item) => isRoleVisible(role, item.roles));
 
   return (
@@ -26,8 +27,9 @@ export function Sidebar({ role, open, onNavigate }: SidebarProps) {
               Fire Safety Operations
             </p>
             <p className="text-xs text-slate-500">
-              Role: {ROLE_LABELS[role]}
+              {user ? `${user.firstName} ${user.lastName}` : "Authenticated user"}
             </p>
+            <p className="text-[11px] text-slate-400">{ROLE_LABELS[role]}</p>
           </div>
         </div>
 
