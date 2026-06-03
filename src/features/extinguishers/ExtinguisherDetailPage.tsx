@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { Button, buttonVariants } from "../../components/button";
 import { useAuth } from "../auth/auth.store";
@@ -27,10 +27,14 @@ function formatDate(value: string | null | undefined) {
 
 export function ExtinguisherDetailPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { id } = useParams();
-  const [record, setRecord] = useState<FireExtinguisher | null>(null);
-  const [loading, setLoading] = useState(true);
+  const seededRecord = (location.state as { record?: FireExtinguisher } | null)?.record;
+  const [record, setRecord] = useState<FireExtinguisher | null>(() =>
+    seededRecord && seededRecord.id === id ? seededRecord : null
+  );
+  const [loading, setLoading] = useState(() => !(seededRecord && seededRecord.id === id));
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -38,7 +42,7 @@ export function ExtinguisherDetailPage() {
   const canManage = canManageExtinguishers(user?.role ?? "user");
   const canDelete = canDeleteExtinguishers(user?.role ?? "user");
 
-  async function loadRecord() {
+  const loadRecord = useCallback(async () => {
     if (!id) {
       setError("Invalid extinguisher id.");
       setLoading(false);
@@ -60,11 +64,18 @@ export function ExtinguisherDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
 
   useEffect(() => {
+    if (seededRecord && seededRecord.id === id) {
+      setRecord(seededRecord);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     void loadRecord();
-  }, [id]);
+  }, [id, loadRecord, seededRecord]);
 
   async function handleDelete() {
     if (!id || !record) return;

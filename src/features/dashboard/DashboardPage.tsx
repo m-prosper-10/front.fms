@@ -3,31 +3,23 @@ import { RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/button";
 import { buttonVariants } from "../../components/button";
-import { Badge } from "../../components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { LoadingState } from "../../components/shared/LoadingState";
 import { PageHeader } from "../../components/shared/PageHeader";
-import { StatusBadge } from "../../components/shared/StatusBadge";
 import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { ApiError } from "../../lib/api";
-import { ROLE_LABELS, canAccessReporting } from "../../lib/permissions";
+import { canAccessReporting } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
 import { listExtinguishers } from "../extinguishers/extinguisher.api";
 import type { FireExtinguisher } from "../extinguishers/extinguisher.types";
 import { listInspections } from "../inspections/inspection.api";
 import type { InspectionRecord } from "../inspections/inspection.types";
-import type { DashboardReport, ReportModuleMeta } from "../reports/reports.types";
-import type { NotificationModuleMeta, PublicNotification } from "../notifications/notifications.types";
-import {
-  loadNotifications,
-  loadNotificationMeta,
-  loadReportingDashboard
-} from "./dashboard.api";
+import type { DashboardReport } from "../reports/reports.types";
+import type { PublicNotification } from "../notifications/notifications.types";
+import { loadNotifications, loadReportingDashboard } from "./dashboard.api";
 
 type DashboardData = {
-  reportMeta: ReportModuleMeta | null;
   report: DashboardReport | null;
-  notificationMeta: NotificationModuleMeta | null;
   notifications: PublicNotification[];
   extinguishers: FireExtinguisher[];
   inspections: InspectionRecord[];
@@ -95,9 +87,7 @@ function MetricCard({
 export function DashboardPage() {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData>({
-    reportMeta: null,
     report: null,
-    notificationMeta: null,
     notifications: [],
     extinguishers: [],
     inspections: []
@@ -117,9 +107,8 @@ export function DashboardPage() {
         setError(null);
 
         if (canViewReporting) {
-          const [reporting, notificationMeta, notifications] = await Promise.all([
+          const [reporting, notifications] = await Promise.all([
             loadReportingDashboard(),
-            loadNotificationMeta(),
             loadNotifications()
           ]);
 
@@ -128,9 +117,7 @@ export function DashboardPage() {
           }
 
           setData({
-            reportMeta: reporting.reportMeta,
             report: reporting.dashboard,
-            notificationMeta,
             notifications,
             extinguishers: [],
             inspections: []
@@ -147,9 +134,7 @@ export function DashboardPage() {
           }
 
           setData({
-            reportMeta: null,
             report: null,
-            notificationMeta: null,
             notifications,
             extinguishers,
             inspections: inspections.filter((item) => item.scheduledBy === user?.id)
@@ -234,7 +219,7 @@ export function DashboardPage() {
         },
         {
           title: "Maintenance activity",
-          description: "Maintenance activity pulled from the reporting service.",
+          description: "Maintenance activity in the current view.",
           data: countBy(report.recentMaintenance || [], (item) => item.actionTaken, recentActions)
         },
         {
@@ -258,12 +243,12 @@ export function DashboardPage() {
         },
         {
           title: "Inspection status",
-          description: "Inspection workflow state across the backend snapshot.",
+          description: "Inspection workflow state for the active workspace.",
           data: inspectionStatus
         },
         {
           title: "Maintenance activity",
-          description: "Maintenance actions tracked in the reporting service.",
+          description: "Maintenance actions in the current view.",
           data: countBy(report.recentMaintenance || [], (item) => item.actionTaken, recentActions)
         }
       ];
@@ -272,7 +257,7 @@ export function DashboardPage() {
     return [
       {
         title: "Inventory status",
-        description: "Extinguisher counts by current backend state.",
+        description: "Extinguisher counts by current state.",
         data: inventoryStatus
       },
       {
@@ -335,7 +320,7 @@ export function DashboardPage() {
       },
       {
         title: "Notification status",
-        description: "Read versus unread notifications returned by the backend.",
+        description: "Read versus unread notifications.",
         data: notificationReadChart
       }
     ];
@@ -354,7 +339,7 @@ export function DashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description="Role-aware operations overview with charts tailored to the active session."
+        description="Operational overview with charts, counts, and recent work items."
         action={
           <Button variant="outline" onClick={refresh} disabled={refreshing}>
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -373,25 +358,16 @@ export function DashboardPage() {
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Role" value={ROLE_LABELS[user?.role ?? "user"]} />
         <MetricCard title="Unread notifications" value={formatNumber(unreadNotifications)} />
         <MetricCard title="Notifications total" value={formatNumber(data.notifications.length)} />
-        <MetricCard
-          title="Reporting access"
-          value={canViewReporting ? "Enabled" : "Hidden"}
-          description={
-            canViewReporting
-              ? "Reporting-service charts are available for this role."
-              : "Reporting-service endpoints are hidden from this role."
-          }
-        />
+        <MetricCard title="Open inspections" value={formatNumber(data.inspections.length)} />
       </div>
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Role view</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Operational charts</h2>
           <p className="text-sm text-slate-500">
-            The graphs below are tailored to the active role and only use backend data allowed to that session.
+            The graphs below reflect the current workspace.
           </p>
         </div>
 
@@ -410,82 +386,40 @@ export function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Role context</CardTitle>
+            <CardTitle>Workspace snapshot</CardTitle>
             <CardDescription>
-              Session state and workflow visibility are derived from the backend-authenticated user.
+              High-level activity counts for the current session.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3">
-              <span className="text-slate-500">Signed-in role</span>
-              <StatusBadge status={user?.role ?? "user"} />
-            </div>
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">Scope</p>
-              <p className="font-medium text-slate-900">
-                {user?.role === "admin"
-                  ? "Full reporting and operational control"
-                  : user?.role === "inspector"
-                    ? "Operational reporting and inspection workflow"
-                    : "Inventory, inspection, and notification visibility only"}
-              </p>
+              <p className="text-xs text-slate-500">Activity</p>
+              <p className="font-medium text-slate-900">Inventory, inspections, and notifications in scope.</p>
             </div>
-            <p className="text-slate-600">
-              {user
-                ? `Signed in as ${user.firstName} ${user.lastName} (${ROLE_LABELS[user.role]})`
-                : "Session is loading."}
-            </p>
+            <p className="text-slate-600">{user ? "Session active." : "Session is loading."}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Backend modules</CardTitle>
+            <CardTitle>Recent notifications</CardTitle>
             <CardDescription>
-              Current service status visible to this role.
+              Latest inbox items.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {canViewReporting ? (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  <StatusBadge status={data.reportMeta?.status || "unknown"} />
-                  <Badge tone="muted">Reports</Badge>
-                  <StatusBadge status={data.notificationMeta?.status || "unknown"} />
-                  <Badge tone="muted">Notifications</Badge>
-                </div>
-                <div className="grid gap-2 md:grid-cols-2">
-                  <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">Reporting module</p>
-                    <p className="font-medium text-slate-900">
-                      {data.reportMeta?.module || "reports"} at {data.reportMeta?.status || "unknown"}
-                    </p>
-                  </div>
-                  <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">Notification module</p>
-                    <p className="font-medium text-slate-900">
-                      {data.notificationMeta?.module || "notifications"} at{" "}
-                      {data.notificationMeta?.status || "unknown"}
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="grid gap-2 md:grid-cols-2">
-                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Accessible inventory</p>
-                  <p className="font-medium text-slate-900">
-                    {formatNumber(data.extinguishers.length)} extinguishers in scope
-                  </p>
-                </div>
-                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Accessible inspections</p>
-                  <p className="font-medium text-slate-900">
-                    {formatNumber(data.inspections.length)} inspection records in scope
-                  </p>
-                </div>
-              </div>
-            )}
+          <CardContent className="grid gap-2 md:grid-cols-2">
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-500">Extinguishers in view</p>
+              <p className="font-medium text-slate-900">
+                {formatNumber(data.extinguishers.length)} records
+              </p>
+            </div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-500">Inspections in view</p>
+              <p className="font-medium text-slate-900">
+                {formatNumber(data.inspections.length)} records
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -509,7 +443,7 @@ export function DashboardPage() {
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Operational dashboard</h2>
             <p className="text-sm text-slate-500">
-              Snapshot pulled from the reporting backend for this role.
+              Operational summary for this session.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -524,10 +458,10 @@ export function DashboardPage() {
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Recent maintenance</CardTitle>
-              <CardDescription>Latest maintenance records returned by the reporting service.</CardDescription>
-            </CardHeader>
+          <CardHeader>
+            <CardTitle>Recent maintenance</CardTitle>
+            <CardDescription>Latest maintenance records.</CardDescription>
+          </CardHeader>
             <CardContent className="overflow-x-auto p-0">
               <table className="w-full text-sm">
                 <thead>
@@ -557,7 +491,7 @@ export function DashboardPage() {
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Operational snapshot</h2>
             <p className="text-sm text-slate-500">
-              This role only sees inventory, inspection, and notification data permitted by the backend.
+              Inventory, inspection, and notification data are shown here.
             </p>
           </div>
         </div>
@@ -566,13 +500,13 @@ export function DashboardPage() {
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
-          <p className="text-sm text-slate-500">Latest items from the notification service.</p>
+          <p className="text-sm text-slate-500">Latest inbox items.</p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Latest notifications</CardTitle>
-            <CardDescription>Read and unread items returned by the backend notification service.</CardDescription>
+            <CardDescription>Read and unread inbox items.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {(data.notifications.slice(0, 5) || []).map((item) => (

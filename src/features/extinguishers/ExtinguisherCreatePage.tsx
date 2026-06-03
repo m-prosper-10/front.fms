@@ -17,6 +17,18 @@ const initialValues: ExtinguisherCreateInput = {
   expiryDate: ""
 };
 
+function resolveCreatedId(record: { id?: string; _id?: string } | null | undefined) {
+  if (record && typeof record.id === "string" && record.id.trim()) {
+    return record.id;
+  }
+
+  if (record && typeof record._id === "string" && record._id.trim()) {
+    return record._id;
+  }
+
+  return null;
+}
+
 export function ExtinguisherCreatePage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +40,17 @@ export function ExtinguisherCreatePage() {
 
     try {
       const created = await createExtinguisher(values);
-      navigate(`/extinguishers/${created.id}`, { replace: true });
+      const createdId = resolveCreatedId(created);
+
+      if (!createdId) {
+        setError("The backend created the record but did not return a usable id.");
+        return;
+      }
+
+      navigate(`/extinguishers/${createdId}`, {
+        replace: true,
+        state: { record: created }
+      });
     } catch (requestError) {
       setError(
         requestError instanceof ApiError
