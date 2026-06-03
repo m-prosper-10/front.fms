@@ -2,5 +2,5 @@ export const appConfig = {
   appName: "Fire Safety Operations",
   description: "Internal operations console for extinguisher, inspection, and maintenance workflows.",
   apiBaseUrl: import.meta.env.VITE_API_URL || "http://localhost:4000",
-  roleStorageKey: "fms-demo-role"
+  authBaseUrl: import.meta.env.VITE_AUTH_URL || "http://localhost:4001"
 } as const;

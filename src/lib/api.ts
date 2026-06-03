@@ -6,21 +6,41 @@ type ApiEnvelope<T> = {
   message?: string;
 };
 
-function buildUrl(path: string) {
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const baseUrl = appConfig.apiBaseUrl.replace(/\/+$/, "");
+export class ApiError extends Error {
+  status: number;
+  details: unknown;
 
-  if (/^https?:\/\//.test(baseUrl)) {
-    return new URL(normalizedPath, baseUrl).toString();
+  constructor(status: number, message: string, details: unknown = null) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
+  }
+}
+
+function buildUrl(baseUrl: string, path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const normalizedBase = baseUrl.replace(/\/+$/, "");
+
+  if (/^https?:\/\//.test(normalizedBase)) {
+    return new URL(normalizedPath, normalizedBase).toString();
   }
 
   const origin =
     typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
 
-  return new URL(`${baseUrl}${normalizedPath}`, origin).toString();
+  return new URL(`${normalizedBase}${normalizedPath}`, origin).toString();
 }
 
 export async function apiRequest<T>(
+  path: string,
+  init: RequestInit = {}
+): Promise<T> {
+  return requestJson(appConfig.apiBaseUrl, path, init);
+}
+
+export async function requestJson<T>(
+  baseUrl: string,
   path: string,
   init: RequestInit = {}
 ): Promise<T> {
@@ -31,7 +51,7 @@ export async function apiRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(buildUrl(path), {
+  const response = await fetch(buildUrl(baseUrl, path), {
     ...init,
     headers,
   });
@@ -47,7 +67,12 @@ export async function apiRequest<T>(
         ? String((body as ApiEnvelope<T>).message || response.statusText)
         : response.statusText || "Request failed";
 
-    throw new Error(message);
+    const details =
+      typeof body === "object" && body && "details" in body
+        ? (body as Record<string, unknown>).details
+        : null;
+
+    throw new ApiError(response.status, message, details);
   }
 
   if (typeof body === "object" && body && "data" in body) {
