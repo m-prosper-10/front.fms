@@ -10,7 +10,6 @@ import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { LoadingState } from "../../components/shared/LoadingState";
 import { ApiError } from "../../lib/api";
-import { appConfig } from "../../lib/config";
 import { canExportReports } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
 import { listInspectors } from "../users/users.api";
@@ -518,10 +517,10 @@ export function ReportsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4" />
-            Reporting service
+            Reporting module
           </CardTitle>
           <CardDescription>
-            {state.meta?.module || "reports"} is {state.meta?.status || "unknown"} at {appConfig.apiBaseUrl}
+            Reporting data is available to admin and inspector roles only.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -529,13 +528,6 @@ export function ReportsPage() {
             <StatusBadge status={state.meta?.status || "unknown"} />
             <Badge tone="muted">Admin only</Badge>
             <Badge tone="muted">Inspector only</Badge>
-          </div>
-          <div className="grid gap-2 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-3">
-            {(state.meta?.endpoints || []).map((endpoint) => (
-              <div key={endpoint} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                {endpoint}
-              </div>
-            ))}
           </div>
         </CardContent>
       </Card>

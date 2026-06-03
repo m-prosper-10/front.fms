@@ -68,14 +68,14 @@ export function InspectionListPage() {
     setError(null);
 
     try {
-      const requests = [listInspections(), listExtinguishers()];
       const [inspectionsResponse, extinguishersResponse, inspectorsResponse] = await Promise.all([
-        ...requests,
-        canViewInspectors ? listInspectors() : Promise.resolve([])
+        listInspections(),
+        listExtinguishers(),
+        canViewInspectors ? listInspectors() : Promise.resolve([] as UserRecord[])
       ]);
       setRecords(inspectionsResponse as InspectionRecord[]);
       setExtinguishers(extinguishersResponse as FireExtinguisher[]);
-      setInspectors((inspectorsResponse as UserRecord[]) || []);
+      setInspectors(inspectorsResponse);
     } catch (requestError) {
       setError(
         requestError instanceof ApiError ? requestError.message : "Unable to load inspections."
@@ -108,6 +108,7 @@ export function InspectionListPage() {
         const matchesQuery =
           item.id.toLowerCase().includes(normalizedQuery) ||
           item.extinguisherId.toLowerCase().includes(normalizedQuery) ||
+          item.assignedInspectorId.toLowerCase().includes(normalizedQuery) ||
           (extinguisher?.serialNumber?.toLowerCase().includes(normalizedQuery) ?? false) ||
           (assignedInspector?.firstName?.toLowerCase().includes(normalizedQuery) ?? false) ||
           (assignedInspector?.lastName?.toLowerCase().includes(normalizedQuery) ?? false);
