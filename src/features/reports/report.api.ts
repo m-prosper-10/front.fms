@@ -8,8 +8,10 @@ import type {
   InspectionReport,
   InventoryPeriodReport,
   InventoryReport,
+  MaintenanceEntry,
   MaintenanceReport,
   ReportModuleMeta,
+  ReportMetric,
   ReportPeriod
 } from "./reports.types";
 
@@ -101,21 +103,21 @@ export function getMaintenanceReport(range?: DateRangeInput) {
 }
 
 export function getMaintenanceHistoryReport(range?: DateRangeInput) {
-  return requestJson<MaintenanceReport[]>(
+  return requestJson<MaintenanceEntry[]>(
     appConfig.apiBaseUrl,
     reportsPath("/maintenance/history", range)
   );
 }
 
 export function getMaintenanceFrequencyReport(range?: DateRangeInput) {
-  return requestJson<{
-    label: string;
-    count: number;
-  }[]>(appConfig.apiBaseUrl, reportsPath("/maintenance/frequency", range));
+  return requestJson<ReportMetric[]>(
+    appConfig.apiBaseUrl,
+    reportsPath("/maintenance/frequency", range)
+  );
 }
 
 export function getMaintenanceRecentReport(range?: DateRangeInput) {
-  return requestJson<MaintenanceReport["recentMaintenance"]>(
+  return requestJson<MaintenanceEntry[]>(
     appConfig.apiBaseUrl,
     reportsPath("/maintenance/recent", range)
   );

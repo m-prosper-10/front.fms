@@ -22,6 +22,7 @@ import { ReportsPage } from "./features/reports/ReportsPage";
 import { UserDetailPage } from "./features/users/UserDetailPage";
 import { UserCreatePage } from "./features/users/UserCreatePage";
 import { UsersPage } from "./features/users/UsersPage";
+import { SectionPage } from "./components/shared/SectionPage";
 
 export const router = createBrowserRouter([
   {

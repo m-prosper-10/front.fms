@@ -1,23 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "../../components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Select } from "../../components/ui/select";
 import { PageHeader } from "../../components/shared/PageHeader";
-import { SectionPage } from "../../components/shared/SectionPage";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { LoadingState } from "../../components/shared/LoadingState";
-import { apiRequest, ApiError } from "../../lib/api";
+import { ApiError } from "../../lib/api";
 import { appConfig } from "../../lib/config";
 import type {
   ComplianceReport,
   DashboardReport,
-  ExportReport,
   InspectionReport,
   InventoryPeriodReport,
   InventoryReport,
   MaintenanceReport,
+  MaintenanceEntry,
   ReportModuleMeta,
   ReportPeriod
 } from "./reports.types";
@@ -58,8 +58,8 @@ type ReportsState = {
   expiredCompliance: ComplianceReport | null;
   upcomingCompliance: ComplianceReport | null;
   maintenance: MaintenanceReport | null;
-  maintenanceHistory: Awaited<ReturnType<typeof getMaintenanceHistoryReport>> | null;
-  maintenanceRecent: Awaited<ReturnType<typeof getMaintenanceRecentReport>> | null;
+  maintenanceHistory: MaintenanceEntry[] | null;
+  maintenanceRecent: MaintenanceEntry[] | null;
 };
 
 const initialRange: RangeState = {
@@ -94,25 +94,6 @@ function formatDate(value: string | null | undefined) {
     month: "short",
     day: "numeric",
     year: "numeric"
-  }).format(date);
-}
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "N/A";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
   }).format(date);
 }
 
@@ -169,7 +150,7 @@ function SectionTable({
 }: {
   title: string;
   description?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <Card>
@@ -206,6 +187,7 @@ export function ReportsPage() {
     maintenanceHistory: null,
     maintenanceRecent: null
   });
+  const [reloadToken, setReloadToken] = useState(0);
 
   const rangeInput = useMemo(() => toRangeInput(range), [range]);
 
@@ -283,23 +265,22 @@ export function ReportsPage() {
       }
     }
 
-    if (loading) {
-      void loadReports();
-    } else if (refreshing) {
-      void loadReports();
-    } else {
-      setRefreshing(true);
-      void loadReports();
-    }
+    void loadReports();
 
     return () => {
       mounted = false;
     };
-  }, [loading, refreshing, rangeInput, selectedPeriod]);
+  }, [reloadToken, rangeInput, selectedPeriod]);
 
   function applyFilters() {
     setRange(rangeDraft);
     setRefreshing(true);
+    setReloadToken((current) => current + 1);
+  }
+
+  function refreshReports() {
+    setRefreshing(true);
+    setReloadToken((current) => current + 1);
   }
 
   async function handleExport(format: "pdf" | "csv") {
@@ -326,7 +307,7 @@ export function ReportsPage() {
   const maintenance = state.maintenance;
 
   if (loading) {
-    return <LoadingState label="Loading reporting module" />;
+    return <LoadingState />;
   }
 
   return (
@@ -336,7 +317,7 @@ export function ReportsPage() {
         description="Reporting module backed by the gateway and protected by role-based access control."
         action={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setRefreshing(true)} disabled={refreshing}>
+            <Button variant="outline" onClick={refreshReports} disabled={refreshing}>
               <RefreshCw className="mr-2 h-4 w-4" />
               {refreshing ? "Refreshing" : "Refresh"}
             </Button>
@@ -402,7 +383,10 @@ export function ReportsPage() {
             <Select
               id="inventory-period"
               value={selectedPeriod}
-              onChange={(event) => setSelectedPeriod(event.target.value as ReportPeriod)}
+              onChange={(event) => {
+                setRefreshing(true);
+                setSelectedPeriod(event.target.value as ReportPeriod);
+              }}
             >
               {periods.map((period) => (
                 <option key={period} value={period}>
@@ -432,8 +416,8 @@ export function ReportsPage() {
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <StatusBadge status={state.meta?.status || "unknown"} />
-            <StatusBadge status="admin" />
-            <StatusBadge status="inspector" />
+            <Badge tone="muted">Admin only</Badge>
+            <Badge tone="muted">Inspector only</Badge>
           </div>
           <div className="grid gap-2 text-sm text-slate-600 md:grid-cols-2 xl:grid-cols-3">
             {(state.meta?.endpoints || []).map((endpoint) => (
@@ -836,10 +820,17 @@ export function ReportsPage() {
         </SectionTable>
       </section>
 
-      <SectionPage
-        title="Report exports"
-        description="The reporting service currently returns JSON export bundles. CSV downloads are generated directly from the backend payload."
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle>Report exports</CardTitle>
+          <CardDescription>
+            The backend export endpoints currently return JSON bundles. CSV is delivered as text content from the service payload.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-slate-600">
+          Use the export actions above to download the current reporting bundle.
+        </CardContent>
+      </Card>
     </div>
   );
 }
