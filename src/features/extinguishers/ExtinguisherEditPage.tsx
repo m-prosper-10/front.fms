@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import { Button } from "../../components/button";
+import { buttonVariants } from "../../components/button";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { ExtinguisherForm } from "./ExtinguisherForm";
 import { sampleExtinguishers } from "./extinguisher.types";
@@ -26,12 +26,13 @@ export function ExtinguisherEditPage() {
         title={`Edit ${extinguisher.serialNumber}`}
         description="Update the record details and keep the register current."
         action={
-          <Button variant="outline" asChild={undefined as never}>
-            <Link to={`/extinguishers/${extinguisher.id}`}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to details
-            </Link>
-          </Button>
+          <Link
+            to={`/extinguishers/${extinguisher.id}`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to details
+          </Link>
         }
       />
 

@@ -15,13 +15,16 @@ export async function apiRequest<T>(
   path: string,
   init: RequestInit = {}
 ): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("Accept", "application/json");
+
+  if (init.body) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(buildUrl(path), {
-    headers: {
-      Accept: "application/json",
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(init.headers || {})
-    },
-    ...init
+    ...init,
+    headers,
   });
 
   const contentType = response.headers.get("content-type") || "";
