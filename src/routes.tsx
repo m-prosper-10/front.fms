@@ -1,6 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
-import { SectionPage } from "./components/shared/SectionPage";
 import { HomePage } from "./features/home/HomePage";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { ProtectedRoute } from "./features/auth/ProtectedRoute";
@@ -19,6 +18,7 @@ import { MaintenanceCreatePage } from "./features/maintenance/MaintenanceCreateP
 import { MaintenanceDetailPage } from "./features/maintenance/MaintenanceDetailPage";
 import { MaintenanceEditPage } from "./features/maintenance/MaintenanceEditPage";
 import { MaintenanceListPage } from "./features/maintenance/MaintenanceListPage";
+import { ReportsPage } from "./features/reports/ReportsPage";
 import { UserDetailPage } from "./features/users/UserDetailPage";
 import { UserCreatePage } from "./features/users/UserCreatePage";
 import { UsersPage } from "./features/users/UsersPage";
@@ -126,10 +126,9 @@ export const router = createBrowserRouter([
       {
         path: "reports",
         element: (
-          <SectionPage
-            title="Reports"
-            description="Inventory, inspection, compliance, and maintenance reports will be surfaced here."
-          />
+          <ProtectedRoute allowedRoles={["admin", "inspector"]}>
+            <ReportsPage />
+          </ProtectedRoute>
         )
       },
       {
