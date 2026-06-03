@@ -299,11 +299,11 @@ export function DashboardPage() {
         <MetricCard title="Notifications total" value={formatNumber(data.notifications.length)} />
         <MetricCard
           title="Reporting access"
-          value={canViewReporting ? "Enabled" : "Limited"}
+          value={user?.role === "user" ? "Read-only" : "Enabled"}
           description={
-            canViewReporting
-              ? "Reporting service is available to this role."
-              : "User role sees the notification-backed dashboard only."
+            user?.role === "user"
+              ? "The user role sees read-only reporting and notifications."
+              : "Reporting service is available to this role."
           }
         />
       </div>
@@ -344,11 +344,11 @@ export function DashboardPage() {
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs text-slate-500">Scope</p>
               <p className="font-medium text-slate-900">
-                {canAccessReporting(user?.role ?? "user")
-                  ? "Reporting and notifications"
-                  : canManageExtinguishers(user?.role ?? "user")
-                    ? "Operational and notifications"
-                    : "Notifications only"}
+                {user?.role === "admin"
+                  ? "Full reporting and operational control"
+                  : user?.role === "inspector"
+                    ? "Operational reporting and inspection workflow"
+                    : "Read-only reporting and notifications"}
               </p>
             </div>
             <p className="text-slate-600">

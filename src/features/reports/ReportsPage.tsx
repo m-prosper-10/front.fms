@@ -13,6 +13,8 @@ import { ApiError } from "../../lib/api";
 import { appConfig } from "../../lib/config";
 import { canExportReports } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
+import { listInspectors } from "../users/users.api";
+import type { UserRecord } from "../users/users.types";
 import type {
   ComplianceReport,
   DashboardReport,
@@ -63,6 +65,7 @@ type ReportsState = {
   maintenance: MaintenanceReport | null;
   maintenanceHistory: MaintenanceEntry[] | null;
   maintenanceRecent: MaintenanceEntry[] | null;
+  inspectors: UserRecord[];
 };
 
 const initialRange: RangeState = {
@@ -189,7 +192,8 @@ export function ReportsPage() {
     upcomingCompliance: null,
     maintenance: null,
     maintenanceHistory: null,
-    maintenanceRecent: null
+    maintenanceRecent: null,
+    inspectors: []
   });
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -216,7 +220,8 @@ export function ReportsPage() {
           upcomingCompliance,
           maintenance,
           maintenanceHistory,
-          maintenanceRecent
+          maintenanceRecent,
+          inspectors
         ] = await Promise.all([
           getReportModuleMeta(),
           getDashboardReport(),
@@ -231,7 +236,8 @@ export function ReportsPage() {
           getUpcomingExpirationsReport(),
           getMaintenanceReport(rangeInput),
           getMaintenanceHistoryReport(rangeInput),
-          getMaintenanceRecentReport(rangeInput)
+          getMaintenanceRecentReport(rangeInput),
+          listInspectors()
         ]);
 
         if (!mounted) {
@@ -252,7 +258,8 @@ export function ReportsPage() {
           upcomingCompliance,
           maintenance,
           maintenanceHistory,
-          maintenanceRecent
+          maintenanceRecent,
+          inspectors
         });
       } catch (loadError) {
         if (!mounted) {
@@ -310,6 +317,20 @@ export function ReportsPage() {
   const inspections = state.inspections;
   const compliance = state.compliance;
   const maintenance = state.maintenance;
+  const inspectorMap = useMemo(
+    () => new Map(state.inspectors.map((item) => [item.id, item])),
+    [state.inspectors]
+  );
+
+  function resolveInspector(id: string) {
+    const inspector = inspectorMap.get(id);
+
+    if (!inspector) {
+      return id;
+    }
+
+    return `${inspector.firstName} ${inspector.lastName}`;
+  }
 
   const reportCharts = useMemo(() => {
     const inventoryStatus = (inventory?.byStatus || []).map((item) => ({
@@ -713,13 +734,13 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              {(inspections?.recentInspections || []).map((item) => (
-                <tr key={item.id} className="border-b last:border-0">
-                  <td className="py-3 text-slate-700">{item.extinguisherId}</td>
-                  <td className="py-3 text-slate-700">{item.assignedInspectorId}</td>
-                  <td className="py-3 text-slate-700">
-                    {formatDate(item.inspectionDate)} {item.inspectionTime}
-                  </td>
+                  {(inspections?.recentInspections || []).map((item) => (
+                    <tr key={item.id} className="border-b last:border-0">
+                      <td className="py-3 text-slate-700">{item.extinguisherId}</td>
+                      <td className="py-3 text-slate-700">{resolveInspector(item.assignedInspectorId)}</td>
+                      <td className="py-3 text-slate-700">
+                        {formatDate(item.inspectionDate)} {item.inspectionTime}
+                      </td>
                   <td className="py-3">
                     <StatusBadge status={item.status} />
                   </td>
@@ -885,12 +906,12 @@ export function ReportsPage() {
             </thead>
             <tbody>
               {(maintenance?.recentMaintenance || []).map((item) => (
-                <tr key={item.id} className="border-b last:border-0">
-                  <td className="py-3 text-slate-700">{item.extinguisherId}</td>
-                  <td className="py-3 text-slate-700">{item.inspectorId}</td>
-                  <td className="py-3 text-slate-700">{formatDate(item.maintenanceDate)}</td>
-                  <td className="py-3 text-slate-700">{item.actionTaken}</td>
-                  <td className="py-3 text-slate-700">{item.issuesIdentified}</td>
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="py-3 text-slate-700">{item.extinguisherId}</td>
+                    <td className="py-3 text-slate-700">{resolveInspector(item.inspectorId)}</td>
+                    <td className="py-3 text-slate-700">{formatDate(item.maintenanceDate)}</td>
+                    <td className="py-3 text-slate-700">{item.actionTaken}</td>
+                    <td className="py-3 text-slate-700">{item.issuesIdentified}</td>
                 </tr>
               ))}
             </tbody>
@@ -911,7 +932,7 @@ export function ReportsPage() {
               {(state.maintenanceHistory || []).map((item) => (
                 <tr key={item.id} className="border-b last:border-0">
                   <td className="py-3 text-slate-700">{item.extinguisherId}</td>
-                  <td className="py-3 text-slate-700">{item.inspectorId}</td>
+                  <td className="py-3 text-slate-700">{resolveInspector(item.inspectorId)}</td>
                   <td className="py-3 text-slate-700">{formatDate(item.maintenanceDate)}</td>
                   <td className="py-3 text-slate-700">{item.actionTaken}</td>
                 </tr>
