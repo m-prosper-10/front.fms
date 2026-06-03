@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
-import { Button, buttonVariants } from "../../components/button";
+import { buttonVariants } from "../../components/button";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { Card, CardContent } from "../../components/ui/card";

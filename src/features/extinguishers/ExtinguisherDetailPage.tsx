@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, Pencil } from "lucide-react";
-import { Button } from "../../components/button";
+import { buttonVariants } from "../../components/button";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -28,18 +28,14 @@ export function ExtinguisherDetailPage() {
         description="Detailed record view for the selected extinguisher."
         action={
           <div className="flex gap-2">
-            <Button variant="outline" asChild={undefined as never}>
-              <Link to="/extinguishers">
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back
-              </Link>
-            </Button>
-            <Button asChild={undefined as never}>
-              <Link to={`/extinguishers/${extinguisher.id}/edit`}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-              </Link>
-            </Button>
+            <Link to="/extinguishers" className={buttonVariants({ variant: "outline" })}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Back
+            </Link>
+            <Link to={`/extinguishers/${extinguisher.id}/edit`} className={buttonVariants()}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </Link>
           </div>
         }
       />
