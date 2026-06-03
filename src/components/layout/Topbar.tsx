@@ -2,6 +2,7 @@ import { Menu, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../button";
 import { Badge } from "../ui/badge";
+import { StatusBadge } from "../shared/StatusBadge";
 import { useAuth } from "../../features/auth/auth.store";
 
 type TopbarProps = {
@@ -49,6 +50,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
             </div>
 
             <Badge tone="muted">{user?.role ?? "user"}</Badge>
+            <StatusBadge status={user?.status ?? "active"} />
           </div>
 
           <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 sm:hidden">

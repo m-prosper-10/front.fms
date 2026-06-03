@@ -6,17 +6,19 @@ type StatusBadgeProps = {
 
 const tones: Record<string, "success" | "warning" | "danger" | "info" | "muted"> =
   {
-    active: "success",
-    expired: "danger",
-    maintenance: "warning",
-    decommissioned: "muted",
-    pending: "warning",
-    completed: "success",
-    overdue: "danger",
-    cancelled: "muted",
-    healthy: "success",
-    warning: "warning",
-    offline: "danger",
+  active: "success",
+  inactive: "muted",
+  expired: "danger",
+  maintenance: "warning",
+  decommissioned: "muted",
+  pending: "warning",
+  completed: "success",
+  overdue: "danger",
+  cancelled: "muted",
+  suspended: "danger",
+  healthy: "success",
+  warning: "warning",
+  offline: "danger",
     ok: "success"
   };
 
