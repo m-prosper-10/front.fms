@@ -41,7 +41,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "extinguishers/new",
-        element: <ExtinguisherCreatePage />
+        element: (
+          <ProtectedRoute allowedRoles={["admin", "inspector"]}>
+            <ExtinguisherCreatePage />
+          </ProtectedRoute>
+        )
       },
       {
         path: "extinguishers/:id",
@@ -49,7 +53,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "extinguishers/:id/edit",
-        element: <ExtinguisherEditPage />
+        element: (
+          <ProtectedRoute allowedRoles={["admin", "inspector"]}>
+            <ExtinguisherEditPage />
+          </ProtectedRoute>
+        )
       },
       {
         path: "inspections",

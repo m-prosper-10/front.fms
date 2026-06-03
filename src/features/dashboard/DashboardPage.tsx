@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { LoadingState } from "../../components/shared/LoadingState";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
+import { useAuth } from "../auth/auth.store";
+import { ROLE_LABELS, canAccessAdminArea, canManageExtinguishers } from "../../lib/permissions";
 import { loadDashboardSummary } from "./dashboard.api";
 
 type DashboardSummary = Awaited<ReturnType<typeof loadDashboardSummary>>;
@@ -32,6 +34,7 @@ function formatUptime(seconds: number) {
 }
 
 export function DashboardPage() {
+  const { user } = useAuth();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,6 +83,65 @@ export function DashboardPage() {
             </CardHeader>
           </Card>
         ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Role context</CardTitle>
+            <CardDescription>
+              Current permissions come from the backend-authenticated user session.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3">
+              <span className="text-slate-500">Signed-in role</span>
+              <StatusBadge status={user?.role ?? "user"} />
+            </div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-500">Scope</p>
+              <p className="font-medium text-slate-900">
+                {canAccessAdminArea(user?.role ?? "user")
+                  ? "Admin access"
+                  : canManageExtinguishers(user?.role ?? "user")
+                    ? "Operational manager"
+                    : "Read-only user"}
+              </p>
+            </div>
+            <p className="text-slate-600">
+              {user
+                ? `Signed in as ${user.firstName} ${user.lastName} (${ROLE_LABELS[user.role]})`
+                : "Session is loading."}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Role-based shortcuts</CardTitle>
+            <CardDescription>
+              These controls are driven by the authenticated user role.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-500">Extinguishers</p>
+              <p className="font-medium text-slate-900">
+                {canManageExtinguishers(user?.role ?? "user")
+                  ? "Create and edit enabled"
+                  : "View only"}
+              </p>
+            </div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-500">Admin console</p>
+              <p className="font-medium text-slate-900">
+                {canAccessAdminArea(user?.role ?? "user")
+                  ? "Users and settings enabled"
+                  : "Hidden from this role"}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {loading ? <LoadingState /> : null}
