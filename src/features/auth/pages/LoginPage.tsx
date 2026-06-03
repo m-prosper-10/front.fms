@@ -164,7 +164,7 @@ export function LoginPage() {
           >
             Create account
           </Link>
-          <span>Backend: {appConfig.authBaseUrl}</span>
+          <span>Gateway: {appConfig.apiBaseUrl}</span>
         </div>
       </div>
     </main>
