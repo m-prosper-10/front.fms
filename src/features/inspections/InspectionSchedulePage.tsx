@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { Button, buttonVariants } from "../../components/button";
@@ -11,7 +11,7 @@ import { canScheduleInspections } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
 import { listExtinguishers } from "../extinguishers/extinguisher.api";
 import type { FireExtinguisher } from "../extinguishers/extinguisher.types";
-import { listUsers } from "../users/users.api";
+import { listInspectors } from "../users/users.api";
 import type { UserRecord } from "../users/users.types";
 import { scheduleInspection } from "./inspection.api";
 
@@ -37,6 +37,7 @@ export function InspectionSchedulePage() {
   const [values, setValues] = useState<FormValues>(initialValues);
   const [extinguishers, setExtinguishers] = useState<FireExtinguisher[]>([]);
   const [inspectors, setInspectors] = useState<UserRecord[]>([]);
+  const [inspectorSearch, setInspectorSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -56,10 +57,8 @@ export function InspectionSchedulePage() {
         const response = await listExtinguishers();
         setExtinguishers(response);
 
-        if (user?.role === "admin") {
-          const users = await listUsers();
-          setInspectors(users.filter((item) => item.role === "inspector"));
-        }
+        const users = await listInspectors();
+        setInspectors(users);
       } catch (requestError) {
         setError(
           requestError instanceof ApiError ? requestError.message : "Unable to load form options."
@@ -71,6 +70,23 @@ export function InspectionSchedulePage() {
 
     void loadOptions();
   }, [canSchedule, user?.role]);
+
+  const filteredInspectors = useMemo(() => {
+    const query = inspectorSearch.trim().toLowerCase();
+
+    if (!query) {
+      return inspectors;
+    }
+
+    return inspectors.filter((item) => {
+      const fullName = `${item.firstName} ${item.lastName}`.toLowerCase();
+      return (
+        fullName.includes(query) ||
+        item.email.toLowerCase().includes(query) ||
+        item.id.toLowerCase().includes(query)
+      );
+    });
+  }, [inspectors, inspectorSearch]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -197,7 +213,13 @@ export function InspectionSchedulePage() {
                 <label htmlFor="assignedInspectorId" className="text-sm font-medium text-slate-900">
                   Assigned inspector
                 </label>
-                {user?.role === "admin" && inspectors.length > 0 ? (
+                <div className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <Input
+                    id="inspectorSearch"
+                    placeholder="Search by name, email, or inspector id"
+                    value={inspectorSearch}
+                    onChange={(event) => setInspectorSearch(event.target.value)}
+                  />
                   <Select
                     id="assignedInspectorId"
                     value={values.assignedInspectorId}
@@ -210,30 +232,47 @@ export function InspectionSchedulePage() {
                     required
                   >
                     <option value="">Select an inspector</option>
-                    {inspectors.map((item) => (
+                    {filteredInspectors.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.firstName} {item.lastName} ({item.email})
+                        {item.firstName} {item.lastName} - {item.email}
                       </option>
                     ))}
                   </Select>
-                ) : (
-                  <Input
-                    id="assignedInspectorId"
-                    placeholder="Inspector user id"
-                    value={values.assignedInspectorId}
-                    onChange={(event) =>
-                      setValues((current) => ({
-                        ...current,
-                        assignedInspectorId: event.target.value
-                      }))
-                    }
-                    required
-                  />
-                )}
+                  <div className="max-h-44 space-y-2 overflow-auto rounded-md border border-slate-200 bg-white p-2">
+                    {filteredInspectors.length > 0 ? (
+                      filteredInspectors.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() =>
+                            setValues((current) => ({
+                              ...current,
+                              assignedInspectorId: item.id
+                            }))
+                          }
+                          className={[
+                            "flex w-full items-start justify-between gap-4 rounded-md px-3 py-2 text-left text-sm transition-colors",
+                            values.assignedInspectorId === item.id
+                              ? "bg-slate-900 text-white"
+                              : "hover:bg-slate-100"
+                          ].join(" ")}
+                        >
+                          <span>
+                            <span className="block font-medium">
+                              {item.firstName} {item.lastName}
+                            </span>
+                            <span className="block text-xs opacity-80">{item.email}</span>
+                          </span>
+                          <span className="text-xs opacity-80">{item.id}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-3 py-2 text-sm text-slate-500">No inspectors match the search.</p>
+                    )}
+                  </div>
+                </div>
                 <p className="text-xs text-slate-500">
-                  {user?.role === "admin"
-                    ? "Admins can choose from inspector accounts."
-                    : "Non-admin users must supply the assigned inspector id."}
+                  Choose from active inspector accounts. The selected value is the backend user id.
                 </p>
               </div>
 

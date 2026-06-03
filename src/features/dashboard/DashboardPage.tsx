@@ -1,88 +1,199 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "../../components/button";
+import { Badge } from "../../components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { LoadingState } from "../../components/shared/LoadingState";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
+import { ApiError } from "../../lib/api";
+import { ROLE_LABELS, canAccessReporting, canManageExtinguishers } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
-import { ROLE_LABELS, canAccessAdminArea, canManageExtinguishers } from "../../lib/permissions";
-import { loadDashboardSummary } from "./dashboard.api";
+import type { DashboardReport, ReportModuleMeta } from "../reports/reports.types";
+import type { NotificationModuleMeta, PublicNotification } from "../notifications/notifications.types";
+import {
+  loadNotifications,
+  loadNotificationMeta,
+  loadReportingDashboard
+} from "./dashboard.api";
 
-type DashboardSummary = Awaited<ReturnType<typeof loadDashboardSummary>>;
+type DashboardData = {
+  reportMeta: ReportModuleMeta | null;
+  report: DashboardReport | null;
+  notificationMeta: NotificationModuleMeta | null;
+  notifications: PublicNotification[];
+};
 
-const stats = [
-  { label: "Total Extinguishers", value: 128 },
-  { label: "Active", value: 104 },
-  { label: "Expired", value: 8 },
-  { label: "Under Maintenance", value: 16 },
-  { label: "Pending Inspections", value: 21 },
-  { label: "Overdue Inspections", value: 5 }
-];
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "N/A";
+  }
 
-const recentItems = [
-  { label: "Inspection completed", detail: "EXT-1024 inspected in Block A" },
-  { label: "Maintenance logged", detail: "EXT-0881 returned to service" },
-  { label: "Inspection scheduled", detail: "EXT-1107 due next Tuesday" }
-];
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
 
-function formatUptime(seconds: number) {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
+}
 
-  return `${hours}h ${minutes}m`;
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function MetricCard({
+  title,
+  value,
+  description
+}: {
+  title: string;
+  value: number | string;
+  description?: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardDescription>{title}</CardDescription>
+        <CardTitle className="text-2xl">{value}</CardTitle>
+      </CardHeader>
+      {description ? (
+        <CardContent className="pt-0 text-sm text-slate-500">{description}</CardContent>
+      ) : null}
+    </Card>
+  );
 }
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<DashboardData>({
+    reportMeta: null,
+    report: null,
+    notificationMeta: null,
+    notifications: []
+  });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
 
-  async function refresh() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await loadDashboardSummary();
-      setSummary(result);
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to load gateway status."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const canViewReporting = canAccessReporting(user?.role ?? "user");
 
   useEffect(() => {
-    void refresh();
-  }, []);
+    let mounted = true;
+
+    async function loadDashboard() {
+      try {
+        setError(null);
+
+        if (canViewReporting) {
+          const [reporting, notificationMeta, notifications] = await Promise.all([
+            loadReportingDashboard(),
+            loadNotificationMeta(),
+            loadNotifications()
+          ]);
+
+          if (!mounted) {
+            return;
+          }
+
+          setData({
+            reportMeta: reporting.reportMeta,
+            report: reporting.dashboard,
+            notificationMeta,
+            notifications
+          });
+        } else {
+          const notifications = await loadNotifications();
+
+          if (!mounted) {
+            return;
+          }
+
+          setData({
+            reportMeta: null,
+            report: null,
+            notificationMeta: null,
+            notifications
+          });
+        }
+      } catch (requestError) {
+        if (!mounted) {
+          return;
+        }
+
+        const message =
+          requestError instanceof ApiError ? requestError.message : "Unable to load dashboard.";
+        setError(message);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => {
+      mounted = false;
+    };
+  }, [canViewReporting, reloadToken]);
+
+  const unreadNotifications = useMemo(
+    () => data.notifications.filter((item) => !item.isRead).length,
+    [data.notifications]
+  );
+
+  function refresh() {
+    setRefreshing(true);
+    setReloadToken((current) => current + 1);
+  }
+
+  if (loading) {
+    return <LoadingState />;
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description="Operational overview for extinguisher inventory, inspections, and the API gateway."
+        description="Role-aware operations overview backed by the reporting and notification services."
         action={
-          <Button variant="outline" onClick={() => void refresh()}>
+          <Button variant="outline" onClick={refresh} disabled={refreshing}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
+            {refreshing ? "Refreshing" : "Refresh"}
           </Button>
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="pb-2">
-              <CardDescription>{stat.label}</CardDescription>
-              <CardTitle className="text-2xl">{stat.value}</CardTitle>
-            </CardHeader>
-          </Card>
-        ))}
+      {error ? (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-900">Unable to load dashboard</CardTitle>
+            <CardDescription className="text-red-700">{error}</CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard title="Role" value={ROLE_LABELS[user?.role ?? "user"]} />
+        <MetricCard title="Unread notifications" value={formatNumber(unreadNotifications)} />
+        <MetricCard title="Notifications total" value={formatNumber(data.notifications.length)} />
+        <MetricCard
+          title="Reporting access"
+          value={canViewReporting ? "Enabled" : "Limited"}
+          description={
+            canViewReporting
+              ? "Reporting service is available to this role."
+              : "User role sees the notification-backed dashboard only."
+          }
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -90,7 +201,7 @@ export function DashboardPage() {
           <CardHeader>
             <CardTitle>Role context</CardTitle>
             <CardDescription>
-              Current permissions come from the backend-authenticated user session.
+              Session state and workflow visibility are derived from the backend-authenticated user.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
@@ -101,11 +212,11 @@ export function DashboardPage() {
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs text-slate-500">Scope</p>
               <p className="font-medium text-slate-900">
-                {canAccessAdminArea(user?.role ?? "user")
-                  ? "Admin access"
+                {canAccessReporting(user?.role ?? "user")
+                  ? "Reporting and notifications"
                   : canManageExtinguishers(user?.role ?? "user")
-                    ? "Operational manager"
-                    : "Read-only user"}
+                    ? "Operational and notifications"
+                    : "Notifications only"}
               </p>
             </div>
             <p className="text-slate-600">
@@ -118,168 +229,132 @@ export function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Role-based shortcuts</CardTitle>
+            <CardTitle>Backend modules</CardTitle>
             <CardDescription>
-              These controls are driven by the authenticated user role.
+              Current service status reported by the reporting and notification modules.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">Extinguishers</p>
-              <p className="font-medium text-slate-900">
-                {canManageExtinguishers(user?.role ?? "user")
-                  ? "Create and edit enabled"
-                  : "View only"}
-              </p>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge status={data.reportMeta?.status || "unknown"} />
+              <Badge tone="muted">Reports</Badge>
+              <StatusBadge status={data.notificationMeta?.status || "unknown"} />
+              <Badge tone="muted">Notifications</Badge>
             </div>
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs text-slate-500">Admin console</p>
-              <p className="font-medium text-slate-900">
-                {canAccessAdminArea(user?.role ?? "user")
-                  ? "Users and settings enabled"
-                  : "Hidden from this role"}
-              </p>
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs text-slate-500">Reporting module</p>
+                <p className="font-medium text-slate-900">
+                  {data.reportMeta?.module || "reports"} at {data.reportMeta?.status || "unknown"}
+                </p>
+              </div>
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs text-slate-500">Notification module</p>
+                <p className="font-medium text-slate-900">
+                  {data.notificationMeta?.module || "notifications"} at{" "}
+                  {data.notificationMeta?.status || "unknown"}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {loading ? <LoadingState /> : null}
+      {canViewReporting ? (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Operational dashboard</h2>
+            <p className="text-sm text-slate-500">
+              Snapshot pulled from the reporting-service dashboard endpoint.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard title="Total extinguishers" value={formatNumber(data.report?.totalExtinguishers ?? 0)} />
+            <MetricCard title="Active" value={formatNumber(data.report?.activeExtinguishers ?? 0)} />
+            <MetricCard title="Expired" value={formatNumber(data.report?.expiredExtinguishers ?? 0)} />
+            <MetricCard title="Under maintenance" value={formatNumber(data.report?.underMaintenance ?? 0)} />
+            <MetricCard title="Pending inspections" value={formatNumber(data.report?.pendingInspections ?? 0)} />
+            <MetricCard title="Completed inspections" value={formatNumber(data.report?.completedInspections ?? 0)} />
+            <MetricCard title="Overdue inspections" value={formatNumber(data.report?.overdueInspections ?? 0)} />
+            <MetricCard title="Upcoming expirations" value={formatNumber(data.report?.upcomingExpirations ?? 0)} />
+          </div>
 
-      {!loading && error ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent maintenance</CardTitle>
+              <CardDescription>Latest maintenance records returned by the reporting service.</CardDescription>
+            </CardHeader>
+            <CardContent className="overflow-x-auto p-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-slate-500">
+                    <th className="px-6 py-3 font-medium">Extinguisher</th>
+                    <th className="px-6 py-3 font-medium">Action</th>
+                    <th className="px-6 py-3 font-medium">Date</th>
+                    <th className="px-6 py-3 font-medium">Issues</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.report?.recentMaintenance || []).map((item) => (
+                    <tr key={item.id} className="border-b last:border-0">
+                      <td className="px-6 py-4 text-slate-700">{item.extinguisherId}</td>
+                      <td className="px-6 py-4 text-slate-700">{item.actionTaken}</td>
+                      <td className="px-6 py-4 text-slate-700">{formatDateTime(item.maintenanceDate)}</td>
+                      <td className="px-6 py-4 text-slate-700">{item.issuesIdentified}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </section>
+      ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Gateway unavailable</CardTitle>
-            <CardDescription>{error}</CardDescription>
+            <CardTitle>Dashboard access</CardTitle>
+            <CardDescription>
+              Reporting metrics are reserved for admin and inspector roles.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button variant="outline" onClick={() => void refresh()}>
-              Retry connection
-            </Button>
+          <CardContent className="text-sm text-slate-600">
+            This role still receives notification and workflow updates from the backend.
           </CardContent>
         </Card>
-      ) : null}
+      )}
 
-      {!loading && summary ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>API gateway</CardTitle>
-              <CardDescription>
-                Live service information returned from the backend.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge status={summary.gateway.status} />
-                <span className="text-sm text-slate-500">
-                  {summary.gateway.service}
-                </span>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Stack</p>
-                  <p className="text-sm font-medium text-slate-900">
-                    {summary.gateway.stack}
-                  </p>
-                </div>
-                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">API style</p>
-                  <p className="text-sm font-medium text-slate-900">
-                    {summary.gateway.apiStyle}
-                  </p>
-                </div>
-                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Uptime</p>
-                  <p className="text-sm font-medium text-slate-900">
-                    {formatUptime(summary.health.uptime)}
-                  </p>
-                </div>
-                <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Monitoring</p>
-                  <p className="text-sm font-medium text-slate-900">
-                    {summary.examples.service.monitoring}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Service capability</CardTitle>
-              <CardDescription>
-                Useful backend details for the operations UI.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Databases
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {summary.examples.databases.map((database) => (
-                    <StatusBadge key={database.key} status={database.name} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Security</p>
-                <p className="text-sm font-medium text-slate-900">
-                  {summary.examples.security}
-                </p>
-              </div>
-
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Monitoring</p>
-                <p className="text-sm font-medium text-slate-900">
-                  {summary.monitoring.status}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
+          <p className="text-sm text-slate-500">Latest items from the notification service.</p>
         </div>
-      ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Recent activity</CardTitle>
-            <CardDescription>
-              Operational events to keep the site team oriented.
-            </CardDescription>
+            <CardTitle>Latest notifications</CardTitle>
+            <CardDescription>Read and unread items returned by the backend notification service.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentItems.map((item) => (
-              <div key={item.label} className="rounded-md border border-slate-200 p-3">
-                <p className="text-sm font-medium text-slate-900">{item.label}</p>
-                <p className="text-sm text-slate-500">{item.detail}</p>
+            {(data.notifications.slice(0, 5) || []).map((item) => (
+              <div key={item.id} className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-medium text-slate-900">{item.title}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge status={item.type} />
+                    <Badge tone={item.isRead ? "muted" : "warning"}>
+                      {item.isRead ? "Read" : "Unread"}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="mt-1 text-sm text-slate-600">{item.message}</p>
+                <p className="mt-2 text-xs text-slate-500">{formatDateTime(item.createdAt)}</p>
               </div>
             ))}
+            {data.notifications.length === 0 ? (
+              <p className="text-sm text-slate-500">No notifications available for this session.</p>
+            ) : null}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Operational notes</CardTitle>
-            <CardDescription>
-              Keep the frontend focused on task execution, not decoration.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-slate-600">
-            <p>
-              The shell, navigation, and dashboard are now aligned with the
-              backend gateway and the operations brief.
-            </p>
-            <p>
-              Next step is to connect the list and form pages to the relevant
-              domain service endpoints.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      </section>
     </div>
   );
 }
