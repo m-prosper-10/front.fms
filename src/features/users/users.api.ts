@@ -15,6 +15,10 @@ export function listUsers() {
   return requestJson<UserRecord[]>(baseUrl, "/api/users");
 }
 
+export function listInspectors() {
+  return requestJson<UserRecord[]>(baseUrl, "/api/users/inspectors");
+}
+
 export function getUser(id: string) {
   return requestJson<UserRecord>(baseUrl, `/api/users/${id}`);
 }

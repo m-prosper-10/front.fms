@@ -92,3 +92,7 @@ export function canCompleteInspections(role: UserRole) {
 export function canManageMaintenance(role: UserRole) {
   return role === "admin" || role === "inspector";
 }
+
+export function canAccessReporting(role: UserRole) {
+  return role === "admin" || role === "inspector";
+}
