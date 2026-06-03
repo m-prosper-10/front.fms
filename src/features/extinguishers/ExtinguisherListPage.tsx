@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 import { Button } from "../../components/button";
 import { buttonVariants } from "../../components/button";
+import { useAuth } from "../auth/auth.store";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { Card, CardContent } from "../../components/ui/card";
@@ -16,9 +17,12 @@ import {
   TableHeader,
   TableRow
 } from "../../components/ui/table";
+import { canManageExtinguishers } from "../../lib/permissions";
 import { sampleExtinguishers } from "./extinguisher.types";
 
 export function ExtinguisherListPage() {
+  const { user } = useAuth();
+  const canManage = canManageExtinguishers(user?.role ?? "user");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -43,15 +47,27 @@ export function ExtinguisherListPage() {
         title="Fire Extinguishers"
         description="Track serial numbers, locations, expiry dates, and current status."
         action={
-          <Link to="/extinguishers/new" className={buttonVariants()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add extinguisher
-          </Link>
+          canManage ? (
+            <Link to="/extinguishers/new" className={buttonVariants()}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add extinguisher
+            </Link>
+          ) : (
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              View-only access
+            </div>
+          )
         }
       />
 
       <Card>
         <CardContent className="space-y-4 p-4 md:p-6">
+          {!canManage ? (
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              Your current role can view extinguisher records but cannot create or edit them.
+            </div>
+          ) : null}
+
           <div className="grid gap-3 lg:grid-cols-[1.5fr_0.8fr_0.8fr]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -131,12 +147,14 @@ export function ExtinguisherListPage() {
                         >
                           View
                         </Link>
-                        <Link
-                          to={`/extinguishers/${item.id}/edit`}
-                          className={buttonVariants({ variant: "ghost", size: "sm" })}
-                        >
-                          Edit
-                        </Link>
+                        {canManage ? (
+                          <Link
+                            to={`/extinguishers/${item.id}/edit`}
+                            className={buttonVariants({ variant: "ghost", size: "sm" })}
+                          >
+                            Edit
+                          </Link>
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>

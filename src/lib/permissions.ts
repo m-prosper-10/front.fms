@@ -64,3 +64,11 @@ export const NAV_ITEMS = [
 export function isRoleVisible(role: UserRole, allowedRoles: readonly UserRole[]) {
   return allowedRoles.includes(role);
 }
+
+export function canManageExtinguishers(role: UserRole) {
+  return role === "admin" || role === "inspector";
+}
+
+export function canAccessAdminArea(role: UserRole) {
+  return role === "admin";
+}

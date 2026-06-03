@@ -42,13 +42,26 @@ export async function apiRequest<T>(
 export async function requestJson<T>(
   baseUrl: string,
   path: string,
-  init: RequestInit = {}
+  init: RequestInit = {},
+  options: { auth?: boolean } = {}
 ): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
 
   if (init.body) {
     headers.set("Content-Type", "application/json");
+  }
+
+  const shouldAttachAuth = options.auth ?? true;
+
+  if (shouldAttachAuth && typeof window !== "undefined") {
+    const accessToken = window.localStorage.getItem(
+      appConfig.authStorageKeys.accessToken
+    );
+
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
   }
 
   const response = await fetch(buildUrl(baseUrl, path), {
