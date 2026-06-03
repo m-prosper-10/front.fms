@@ -1,9 +1,8 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { Download, RefreshCw, ShieldCheck } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { Button } from "../../components/button";
 import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Select } from "../../components/ui/select";
 import { PageHeader } from "../../components/shared/PageHeader";
@@ -22,7 +21,6 @@ import type {
   InventoryReport,
   MaintenanceReport,
   MaintenanceEntry,
-  ReportModuleMeta,
   ReportPeriod
 } from "./reports.types";
 import {
@@ -40,7 +38,6 @@ import {
   getMaintenanceReport,
   getOverdueInspectionReport,
   getPendingInspectionReport,
-  getReportModuleMeta,
   getUpcomingExpirationsReport
 } from "./report.api";
 
@@ -50,7 +47,6 @@ type RangeState = {
 };
 
 type ReportsState = {
-  meta: ReportModuleMeta | null;
   dashboard: DashboardReport | null;
   inventory: InventoryReport | null;
   inventoryPeriod: InventoryPeriodReport | null;
@@ -178,7 +174,6 @@ export function ReportsPage() {
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<ReportsState>({
-    meta: null,
     dashboard: null,
     inventory: null,
     inventoryPeriod: null,
@@ -206,7 +201,6 @@ export function ReportsPage() {
       try {
         setError(null);
         const [
-          meta,
           dashboard,
           inventory,
           inventoryPeriod,
@@ -220,9 +214,7 @@ export function ReportsPage() {
           maintenance,
           maintenanceHistory,
           maintenanceRecent,
-          inspectors
         ] = await Promise.all([
-          getReportModuleMeta(),
           getDashboardReport(),
           getInventoryReport(rangeInput),
           getInventoryPeriodReport(selectedPeriod, rangeInput),
@@ -244,7 +236,6 @@ export function ReportsPage() {
         }
 
         setState({
-          meta,
           dashboard,
           inventory,
           inventoryPeriod,
@@ -357,7 +348,7 @@ export function ReportsPage() {
       return [
         {
           title: "Inventory snapshot",
-          description: "Read-only inventory status from the reporting service.",
+          description: "Read-only inventory status.",
           data: inventoryStatus
         },
         {
@@ -420,7 +411,7 @@ export function ReportsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Reports"
-        description="Reporting module backed by the gateway and protected by role-based access control."
+        description="Operational reports and summaries."
         action={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={refreshReports} disabled={refreshing}>
@@ -456,7 +447,7 @@ export function ReportsPage() {
         <CardHeader>
           <CardTitle>Report filters</CardTitle>
           <CardDescription>
-            Filter date-bound reports. Dashboard and compliance summaries always use the current backend snapshot.
+            Filter date-bound reports and timeline views.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-4">
@@ -513,30 +504,11 @@ export function ReportsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4" />
-            Reporting module
-          </CardTitle>
-          <CardDescription>
-            Reporting data is available to admin and inspector roles only.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <StatusBadge status={state.meta?.status || "unknown"} />
-            <Badge tone="muted">Admin only</Badge>
-            <Badge tone="muted">Inspector only</Badge>
-          </div>
-        </CardContent>
-      </Card>
-
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Visual snapshot</h2>
           <p className="text-sm text-slate-500">
-            Role-aware charts generated from backend reporting data.
+            Summary charts for stock, inspections, and maintenance.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -632,7 +604,7 @@ export function ReportsPage() {
 
         <SectionTable
           title={`Inventory timeline (${selectedPeriod})`}
-          description={`Timeline generated from the /inventory/${selectedPeriod} reporting endpoint.`}
+          description={`Timeline for the selected period.`}
         >
           <table className="w-full text-sm">
             <thead>
@@ -657,7 +629,7 @@ export function ReportsPage() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Inspection report</h2>
           <p className="text-sm text-slate-500">
-            Backend inspection summary with status and result breakdowns.
+            Inspection summary with status and result breakdowns.
           </p>
         </div>
 
@@ -714,7 +686,7 @@ export function ReportsPage() {
           </SectionTable>
         </div>
 
-        <SectionTable title="Recent inspections" description="Latest records returned by the summary endpoint.">
+        <SectionTable title="Recent inspections" description="Latest inspection records in the selected window.">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-slate-500">
@@ -768,7 +740,7 @@ export function ReportsPage() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Compliance report</h2>
           <p className="text-sm text-slate-500">
-            Regulatory status snapshot from the compliance endpoints.
+            Compliance snapshot for inventory and overdue checks.
           </p>
         </div>
 
@@ -783,7 +755,7 @@ export function ReportsPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <SectionTable
             title="Expired extinguishers"
-            description="Records returned by the compliance /expired endpoint."
+            description="Expired extinguishers in the current view."
           >
             <table className="w-full text-sm">
               <thead>
@@ -807,7 +779,7 @@ export function ReportsPage() {
 
           <SectionTable
             title="Upcoming expirations"
-            description="Records returned by the compliance /upcoming-expirations endpoint."
+            description="Extinguishers nearing expiry in the current view."
           >
             <table className="w-full text-sm">
               <thead>
@@ -835,7 +807,7 @@ export function ReportsPage() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Maintenance report</h2>
           <p className="text-sm text-slate-500">
-            Maintenance logs and frequency summaries returned by the backend reporting service.
+            Maintenance logs and frequency summaries.
           </p>
         </div>
 
@@ -937,9 +909,7 @@ export function ReportsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Report exports</CardTitle>
-          <CardDescription>
-            The backend export endpoints currently return JSON bundles. CSV is delivered as text content from the service payload.
-          </CardDescription>
+          <CardDescription>Download the current report bundle as CSV or JSON.</CardDescription>
         </CardHeader>
         <CardContent className="text-sm text-slate-600">
           Use the export actions above to download the current reporting bundle.

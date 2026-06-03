@@ -10,15 +10,9 @@ import { PageHeader } from "../../components/shared/PageHeader";
 import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { ApiError } from "../../lib/api";
-import { canViewNotificationMeta } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
-import type { NotificationModuleMeta, NotificationType, PublicNotification } from "./notifications.types";
-import {
-  getNotificationModuleMeta,
-  listNotifications,
-  listNotificationsByType,
-  markNotificationAsRead
-} from "./notifications.api";
+import type { NotificationType, PublicNotification } from "./notifications.types";
+import { listNotifications, listNotificationsByType, markNotificationAsRead } from "./notifications.api";
 
 const notificationTypes: NotificationType[] = ["inspection", "maintenance", "expiry", "system"];
 
@@ -43,7 +37,6 @@ function formatDateTime(value: string | null | undefined) {
 
 export function NotificationsPage() {
   const { user } = useAuth();
-  const [meta, setMeta] = useState<NotificationModuleMeta | null>(null);
   const [notifications, setNotifications] = useState<PublicNotification[]>([]);
   const [typeFilter, setTypeFilter] = useState<NotificationType | "all">("all");
   const [search, setSearch] = useState("");
@@ -68,18 +61,6 @@ export function NotificationsPage() {
         }
 
         setNotifications(items);
-
-        if (canViewNotificationMeta(user?.role ?? "user")) {
-          const moduleMeta = await getNotificationModuleMeta();
-
-          if (!mounted) {
-            return;
-          }
-
-          setMeta(moduleMeta);
-        } else {
-          setMeta(null);
-        }
       } catch (requestError) {
         if (!mounted) {
           return;
@@ -175,7 +156,7 @@ export function NotificationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Notifications"
-        description="Backend-backed notifications inbox and module status."
+        description="Notifications inbox with search, filters, and pagination."
         action={
           <Button variant="outline" onClick={() => void refresh()} disabled={refreshing}>
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -193,36 +174,16 @@ export function NotificationsPage() {
         </Card>
       ) : null}
 
-      {meta ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notification module</CardTitle>
-            <CardDescription>
-              {meta.module} is {meta.status}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <StatusBadge status={meta.status || "unknown"} />
-              <Badge tone="muted">{filteredNotifications.length} total</Badge>
-              <Badge tone="muted">{unreadCount} unread</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notification overview</CardTitle>
-            <CardDescription>
-              Current notification activity is shown without exposing module metadata for this role.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Badge tone="muted">{filteredNotifications.length} total</Badge>
-            <Badge tone="muted">{unreadCount} unread</Badge>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Notification overview</CardTitle>
+          <CardDescription>Current notification activity.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Badge tone="muted">{filteredNotifications.length} total</Badge>
+          <Badge tone="muted">{unreadCount} unread</Badge>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <SimpleBarChart
@@ -279,13 +240,11 @@ export function NotificationsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Inbox</CardTitle>
-          <CardDescription>
-            Notifications are returned by the backend notification service for the authenticated user.
-          </CardDescription>
-        </CardHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle>Inbox</CardTitle>
+            <CardDescription>Notifications for the current session.</CardDescription>
+          </CardHeader>
         <CardContent className="overflow-x-auto p-0">
           <table className="w-full text-sm">
             <thead>
