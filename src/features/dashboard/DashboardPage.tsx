@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { LoadingState } from "../../components/shared/LoadingState";
 import { PageHeader } from "../../components/shared/PageHeader";
 import { StatusBadge } from "../../components/shared/StatusBadge";
+import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { ApiError } from "../../lib/api";
 import { ROLE_LABELS, canAccessReporting, canManageExtinguishers } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
@@ -45,6 +46,20 @@ function formatDateTime(value: string | null | undefined) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
+}
+
+function countBy<T>(items: T[], getter: (item: T) => string, allowed: string[]) {
+  const counts = new Map<string, number>();
+
+  for (const item of items) {
+    const key = getter(item);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return allowed.map((label) => ({
+    label,
+    value: counts.get(label) ?? 0
+  }));
 }
 
 function MetricCard({
@@ -150,6 +165,103 @@ export function DashboardPage() {
     [data.notifications]
   );
 
+  const notificationTypeChart = useMemo(
+    () =>
+      countBy(data.notifications, (item) => item.type, [
+        "inspection",
+        "maintenance",
+        "expiry",
+        "system"
+      ]),
+    [data.notifications]
+  );
+
+  const notificationReadChart = useMemo(
+    () => [
+      { label: "Unread", value: unreadNotifications },
+      { label: "Read", value: Math.max(data.notifications.length - unreadNotifications, 0) }
+    ],
+    [data.notifications.length, unreadNotifications]
+  );
+
+  const reportCharts = useMemo(() => {
+    const report = data.report;
+
+    if (!report) {
+      return [];
+    }
+
+    const inventoryStatus = [
+      { label: "Active", value: report.activeExtinguishers },
+      { label: "Expired", value: report.expiredExtinguishers },
+      { label: "Maintenance", value: report.underMaintenance }
+    ];
+
+    const inspectionStatus = [
+      { label: "Pending", value: report.pendingInspections },
+      { label: "Completed", value: report.completedInspections },
+      { label: "Overdue", value: report.overdueInspections }
+    ];
+
+    if (user?.role === "inspector") {
+      return [
+        {
+          title: "Inspection workload",
+          description: "Current inspection distribution for the assigned role.",
+          data: inspectionStatus
+        },
+        {
+          title: "Notification mix",
+          description: "Operational notification categories assigned to this role.",
+          data: notificationTypeChart
+        },
+        {
+          title: "Notification status",
+          description: "Read versus unread items in the inbox.",
+          data: notificationReadChart
+        }
+      ];
+    }
+
+    if (user?.role === "user") {
+      return [
+        {
+          title: "Your reporting snapshot",
+          description: "Read-only operational summary visible to the user role.",
+          data: inventoryStatus
+        },
+        {
+          title: "Notification status",
+          description: "Unread and read items from your backend inbox.",
+          data: notificationReadChart
+        },
+        {
+          title: "Notification categories",
+          description: "All backend notifications visible to this session.",
+          data: notificationTypeChart
+        }
+      ];
+    }
+
+    return [
+      {
+        title: "Inventory status",
+        description: "Extinguisher counts by current backend state.",
+        data: inventoryStatus
+      },
+      {
+        title: "Inspection status",
+        description: "Inspections grouped by workflow state.",
+        data: inspectionStatus
+      },
+      {
+        title: "Notification categories",
+        description: "Backend notification categories for this session.",
+        data: notificationTypeChart
+      }
+    ];
+  }, [data.report, notificationReadChart, notificationTypeChart, user?.role]);
+
   function refresh() {
     setRefreshing(true);
     setReloadToken((current) => current + 1);
@@ -195,6 +307,26 @@ export function DashboardPage() {
           }
         />
       </div>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Role view</h2>
+          <p className="text-sm text-slate-500">
+            The graphs below are tailored to the active role and sourced from the backend.
+          </p>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          {reportCharts.map((chart) => (
+            <SimpleBarChart
+              key={chart.title}
+              title={chart.title}
+              description={chart.description}
+              data={chart.data}
+            />
+          ))}
+        </div>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

@@ -7,10 +7,11 @@ import { Input } from "../../components/ui/input";
 import { Select } from "../../components/ui/select";
 import { LoadingState } from "../../components/shared/LoadingState";
 import { PageHeader } from "../../components/shared/PageHeader";
+import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { StatusBadge } from "../../components/shared/StatusBadge";
 import { ApiError } from "../../lib/api";
 import { appConfig } from "../../lib/config";
-import { canAccessReporting } from "../../lib/permissions";
+import { canViewNotificationMeta } from "../../lib/permissions";
 import { useAuth } from "../auth/auth.store";
 import type { NotificationModuleMeta, NotificationType, PublicNotification } from "./notifications.types";
 import {
@@ -68,7 +69,7 @@ export function NotificationsPage() {
 
         setNotifications(items);
 
-        if (canAccessReporting(user?.role ?? "user")) {
+        if (canViewNotificationMeta(user?.role ?? "user")) {
           const moduleMeta = await getNotificationModuleMeta();
 
           if (!mounted) {
@@ -120,6 +121,23 @@ export function NotificationsPage() {
   const unreadCount = useMemo(
     () => filteredNotifications.filter((item) => !item.isRead).length,
     [filteredNotifications]
+  );
+
+  const typeChart = useMemo(
+    () =>
+      notificationTypes.map((type) => ({
+        label: type,
+        value: filteredNotifications.filter((item) => item.type === type).length
+      })),
+    [filteredNotifications]
+  );
+
+  const statusChart = useMemo(
+    () => [
+      { label: "Unread", value: unreadCount },
+      { label: "Read", value: Math.max(filteredNotifications.length - unreadCount, 0) }
+    ],
+    [filteredNotifications.length, unreadCount]
   );
 
   async function refresh() {
@@ -185,6 +203,19 @@ export function NotificationsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SimpleBarChart
+          title="Notification types"
+          description="Filtered notification mix for the current inbox view."
+          data={typeChart}
+        />
+        <SimpleBarChart
+          title="Read status"
+          description="Read versus unread notifications in the current view."
+          data={statusChart}
+        />
+      </div>
 
       <Card>
         <CardHeader>

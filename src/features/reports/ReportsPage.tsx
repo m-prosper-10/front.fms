@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "../../components/button";
+import { SimpleBarChart } from "../../components/shared/SimpleBarChart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
@@ -10,6 +11,8 @@ import { StatusBadge } from "../../components/shared/StatusBadge";
 import { LoadingState } from "../../components/shared/LoadingState";
 import { ApiError } from "../../lib/api";
 import { appConfig } from "../../lib/config";
+import { canExportReports } from "../../lib/permissions";
+import { useAuth } from "../auth/auth.store";
 import type {
   ComplianceReport,
   DashboardReport,
@@ -164,6 +167,7 @@ function SectionTable({
 }
 
 export function ReportsPage() {
+  const { user } = useAuth();
   const [rangeDraft, setRangeDraft] = useState<RangeState>(initialRange);
   const [range, setRange] = useState<RangeState>(initialRange);
   const [selectedPeriod, setSelectedPeriod] = useState<ReportPeriod>("monthly");
@@ -190,6 +194,7 @@ export function ReportsPage() {
   const [reloadToken, setReloadToken] = useState(0);
 
   const rangeInput = useMemo(() => toRangeInput(range), [range]);
+  const canExport = canExportReports(user?.role ?? "user");
 
   useEffect(() => {
     let mounted = true;
@@ -306,6 +311,87 @@ export function ReportsPage() {
   const compliance = state.compliance;
   const maintenance = state.maintenance;
 
+  const reportCharts = useMemo(() => {
+    const inventoryStatus = (inventory?.byStatus || []).map((item) => ({
+      label: item.label,
+      value: item.count
+    }));
+    const inspectionStatus = (inspections?.byStatus || []).map((item) => ({
+      label: item.label,
+      value: item.count
+    }));
+    const maintenanceActions = (maintenance?.byAction || []).map((item) => ({
+      label: item.label,
+      value: item.count
+    }));
+    const complianceSummary = compliance
+      ? [
+          { label: "Expired", value: compliance.expiredExtinguishers },
+          { label: "Expiring", value: compliance.expiringWithin30Days },
+          { label: "Compliant", value: compliance.compliantExtinguishers },
+          { label: "Overdue inspections", value: compliance.overdueInspections }
+        ]
+      : [];
+
+    if (user?.role === "user") {
+      return [
+        {
+          title: "Inventory snapshot",
+          description: "Read-only inventory status from the reporting service.",
+          data: inventoryStatus
+        },
+        {
+          title: "Inspection snapshot",
+          description: "User-visible inspection state summary.",
+          data: inspectionStatus
+        },
+        {
+          title: "Compliance snapshot",
+          description: "Public compliance indicators available to the user role.",
+          data: complianceSummary
+        }
+      ];
+    }
+
+    if (user?.role === "inspector") {
+      return [
+        {
+          title: "Inspection snapshot",
+          description: "Inspection workflow state for operational users.",
+          data: inspectionStatus
+        },
+        {
+          title: "Maintenance actions",
+          description: "Logged maintenance actions for the active period.",
+          data: maintenanceActions
+        },
+        {
+          title: "Compliance snapshot",
+          description: "Compliance signals relevant to inspection work.",
+          data: complianceSummary
+        }
+      ];
+    }
+
+    return [
+      {
+        title: "Inventory snapshot",
+        description: "Extinguisher status distribution.",
+        data: inventoryStatus
+      },
+      {
+        title: "Inspection snapshot",
+        description: "Inspection workflow distribution.",
+        data: inspectionStatus
+      },
+      {
+        title: "Maintenance actions",
+        description: "Maintenance actions grouped by type.",
+        data: maintenanceActions
+      }
+    ];
+  }, [compliance, inspections?.byStatus, inventory?.byStatus, maintenance?.byAction, user?.role]);
+
   if (loading) {
     return <LoadingState />;
   }
@@ -321,14 +407,18 @@ export function ReportsPage() {
               <RefreshCw className="mr-2 h-4 w-4" />
               {refreshing ? "Refreshing" : "Refresh"}
             </Button>
-            <Button variant="outline" onClick={() => void handleExport("csv")} disabled={exporting !== null}>
-              <Download className="mr-2 h-4 w-4" />
-              {exporting === "csv" ? "Exporting CSV" : "Export CSV"}
-            </Button>
-            <Button onClick={() => void handleExport("pdf")} disabled={exporting !== null}>
-              <Download className="mr-2 h-4 w-4" />
-              {exporting === "pdf" ? "Exporting bundle" : "Export PDF bundle"}
-            </Button>
+            {canExport ? (
+              <>
+                <Button variant="outline" onClick={() => void handleExport("csv")} disabled={exporting !== null}>
+                  <Download className="mr-2 h-4 w-4" />
+                  {exporting === "csv" ? "Exporting CSV" : "Export CSV"}
+                </Button>
+                <Button onClick={() => void handleExport("pdf")} disabled={exporting !== null}>
+                  <Download className="mr-2 h-4 w-4" />
+                  {exporting === "pdf" ? "Exporting bundle" : "Export PDF bundle"}
+                </Button>
+              </>
+            ) : null}
           </div>
         }
       />
@@ -431,9 +521,9 @@ export function ReportsPage() {
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Operational snapshot</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Visual snapshot</h2>
           <p className="text-sm text-slate-500">
-            Current counts from the reporting dashboard endpoint.
+            Role-aware charts generated from backend reporting data.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -445,6 +535,17 @@ export function ReportsPage() {
           <MetricCard title="Completed inspections" value={formatNumber(dashboard?.completedInspections ?? 0)} />
           <MetricCard title="Overdue inspections" value={formatNumber(dashboard?.overdueInspections ?? 0)} />
           <MetricCard title="Upcoming expirations" value={formatNumber(dashboard?.upcomingExpirations ?? 0)} />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          {reportCharts.map((chart) => (
+            <SimpleBarChart
+              key={chart.title}
+              title={chart.title}
+              description={chart.description}
+              data={chart.data}
+            />
+          ))}
         </div>
       </section>
 
