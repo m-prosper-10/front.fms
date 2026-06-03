@@ -18,6 +18,7 @@ import { MaintenanceCreatePage } from "./features/maintenance/MaintenanceCreateP
 import { MaintenanceDetailPage } from "./features/maintenance/MaintenanceDetailPage";
 import { MaintenanceEditPage } from "./features/maintenance/MaintenanceEditPage";
 import { MaintenanceListPage } from "./features/maintenance/MaintenanceListPage";
+import { NotificationsPage } from "./features/notifications/NotificationsPage";
 import { ReportsPage } from "./features/reports/ReportsPage";
 import { UserDetailPage } from "./features/users/UserDetailPage";
 import { UserCreatePage } from "./features/users/UserCreatePage";
@@ -158,12 +159,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "notifications",
-        element: (
-          <SectionPage
-            title="Notifications"
-            description="Operational alerts and reminders will be presented here."
-          />
-        )
+        element: <NotificationsPage />
       },
       {
         path: "settings",

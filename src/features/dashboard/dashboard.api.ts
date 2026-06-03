@@ -1,48 +1,36 @@
-import { apiRequest } from "../../lib/api";
+import { requestJson } from "../../lib/api";
+import { appConfig } from "../../lib/config";
+import type { DashboardReport, ReportModuleMeta } from "../reports/reports.types";
+import type { NotificationModuleMeta, PublicNotification } from "../notifications/notifications.types";
 
-type GatewayInfo = {
-  service: string;
-  status: string;
-  stack: string;
-  apiStyle: string;
-};
-
-type HealthInfo = {
-  service: string;
-  status: string;
-  uptime: number;
-  timestamp: string;
-};
-
-type MonitoringInfo = {
-  status: string;
-};
-
-type ExampleInfo = {
-  service: {
-    apiStyle: string;
-    logging: string;
-    monitoring: string;
-  };
-  databases: Array<{
-    key: string;
-    name: string;
-  }>;
-  security: string;
-};
-
-export async function loadDashboardSummary() {
-  const [gateway, health, monitoring, examples] = await Promise.all([
-    apiRequest<GatewayInfo>("/"),
-    apiRequest<HealthInfo>("/api/health"),
-    apiRequest<MonitoringInfo>("/api/monitoring"),
-    apiRequest<ExampleInfo>("/api/v1/examples")
+export async function loadReportingDashboard() {
+  const [reportMeta, dashboard] = await Promise.all([
+    requestJson<ReportModuleMeta>(appConfig.apiBaseUrl, "/api/reports/meta"),
+    requestJson<DashboardReport>(appConfig.apiBaseUrl, "/api/reports/dashboard")
   ]);
 
   return {
-    gateway,
-    health,
-    monitoring,
-    examples
+    reportMeta,
+    dashboard
+  };
+}
+
+export function loadNotificationMeta() {
+  return requestJson<NotificationModuleMeta>(appConfig.apiBaseUrl, "/api/notifications/meta");
+}
+
+export function loadNotifications() {
+  return requestJson<PublicNotification[]>(appConfig.apiBaseUrl, "/api/notifications");
+}
+
+export async function loadNotificationSummary() {
+  const [notificationMeta, notifications] = await Promise.all([
+    loadNotificationMeta(),
+    loadNotifications()
+  ]);
+
+  return {
+    notificationMeta,
+    notifications
   };
 }
