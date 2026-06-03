@@ -8,7 +8,16 @@ type ApiEnvelope<T> = {
 
 function buildUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return new URL(normalizedPath, appConfig.apiBaseUrl).toString();
+  const baseUrl = appConfig.apiBaseUrl.replace(/\/+$/, "");
+
+  if (/^https?:\/\//.test(baseUrl)) {
+    return new URL(normalizedPath, baseUrl).toString();
+  }
+
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+
+  return new URL(`${baseUrl}${normalizedPath}`, origin).toString();
 }
 
 export async function apiRequest<T>(
