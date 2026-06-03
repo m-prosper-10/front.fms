@@ -1,6 +1,9 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { SectionPage } from "./components/shared/SectionPage";
+import { LoginPage } from "./features/auth/pages/LoginPage";
+import { ProtectedRoute } from "./features/auth/ProtectedRoute";
+import { RegisterPage } from "./features/auth/pages/RegisterPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { ExtinguisherCreatePage } from "./features/extinguishers/ExtinguisherCreatePage";
 import { ExtinguisherDetailPage } from "./features/extinguishers/ExtinguisherDetailPage";
@@ -9,8 +12,20 @@ import { ExtinguisherListPage } from "./features/extinguishers/ExtinguisherListP
 
 export const router = createBrowserRouter([
   {
+    path: "/login",
+    element: <LoginPage />
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />
+  },
+  {
     path: "/",
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,
@@ -48,10 +63,12 @@ export const router = createBrowserRouter([
       {
         path: "maintenance",
         element: (
-          <SectionPage
-            title="Maintenance"
-            description="Maintenance logging and work order tracking will be added here."
-          />
+          <ProtectedRoute allowedRoles={["admin", "inspector"]}>
+            <SectionPage
+              title="Maintenance"
+              description="Maintenance logging and work order tracking will be added here."
+            />
+          </ProtectedRoute>
         )
       },
       {
@@ -66,10 +83,12 @@ export const router = createBrowserRouter([
       {
         path: "users",
         element: (
-          <SectionPage
-            title="Users"
-            description="Role management and access control views are reserved for admin workflows."
-          />
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <SectionPage
+              title="Users"
+              description="Role management and access control views are reserved for admin workflows."
+            />
+          </ProtectedRoute>
         )
       },
       {
@@ -84,10 +103,12 @@ export const router = createBrowserRouter([
       {
         path: "settings",
         element: (
-          <SectionPage
-            title="Settings"
-            description="Application and role settings are available to admin users."
-          />
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <SectionPage
+              title="Settings"
+              description="Application and role settings are available to admin users."
+            />
+          </ProtectedRoute>
         )
       },
       {

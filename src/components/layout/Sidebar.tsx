@@ -60,7 +60,7 @@ export function Sidebar({ open, onNavigate }: SidebarProps) {
 
         <div className="absolute bottom-0 left-0 right-0 border-t border-slate-200 p-4">
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-            Connected to the gateway configured in VITE_API_URL or the local fallback.
+            Gateway via VITE_API_URL, auth via VITE_AUTH_URL, or local fallbacks.
           </div>
         </div>
       </aside>
