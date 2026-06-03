@@ -88,10 +88,15 @@ export function UsersPage() {
         title="Users"
         description="Manage access, role assignments, and account status from the backend user service."
         action={
-          <Button variant="outline" onClick={() => void loadData()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/users/new" className={buttonVariants()}>
+              Add user
+            </Link>
+            <Button variant="outline" onClick={() => void loadData()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         }
       />
 

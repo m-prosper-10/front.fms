@@ -1,8 +1,15 @@
 import { requestJson } from "../../lib/api";
 import { appConfig } from "../../lib/config";
-import type { UserRecord } from "./users.types";
+import type { CreateUserInput, UserRecord } from "./users.types";
 
 const baseUrl = appConfig.userServiceUrl;
+
+export function createUser(input: CreateUserInput) {
+  return requestJson<UserRecord>(baseUrl, "/api/users", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
 
 export function listUsers() {
   return requestJson<UserRecord[]>(baseUrl, "/api/users");
