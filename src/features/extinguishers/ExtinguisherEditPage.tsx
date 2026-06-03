@@ -15,6 +15,12 @@ export function ExtinguisherEditPage() {
         <PageHeader
           title="Extinguisher not found"
           description="The requested record is not available in the local sample set."
+          action={
+            <Link to="/extinguishers" className={buttonVariants({ variant: "outline" })}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Back to list
+            </Link>
+          }
         />
       </div>
     );
