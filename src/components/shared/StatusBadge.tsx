@@ -18,7 +18,10 @@ const tones: Record<string, "success" | "warning" | "danger" | "info" | "muted">
   healthy: "success",
   warning: "warning",
   offline: "danger",
-  ok: "success"
+  ok: "success",
+  passed: "success",
+  failed: "danger",
+  requires_maintenance: "warning"
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
