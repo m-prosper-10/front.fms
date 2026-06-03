@@ -1,6 +1,7 @@
-import { Navigate, createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { SectionPage } from "./components/shared/SectionPage";
+import { HomePage } from "./features/home/HomePage";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { RegisterPage } from "./features/auth/pages/RegisterPage";
@@ -9,28 +10,25 @@ import { ExtinguisherCreatePage } from "./features/extinguishers/ExtinguisherCre
 import { ExtinguisherDetailPage } from "./features/extinguishers/ExtinguisherDetailPage";
 import { ExtinguisherEditPage } from "./features/extinguishers/ExtinguisherEditPage";
 import { ExtinguisherListPage } from "./features/extinguishers/ExtinguisherListPage";
+import { UserDetailPage } from "./features/users/UserDetailPage";
+import { UsersPage } from "./features/users/UsersPage";
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <HomePage />
+  },
   {
     path: "/login",
     element: <LoginPage />
   },
   {
-    path: "/register",
-    element: <RegisterPage />
-  },
-  {
-    path: "/",
     element: (
       <ProtectedRoute>
         <AppLayout />
       </ProtectedRoute>
     ),
     children: [
-      {
-        index: true,
-        element: <Navigate to="/dashboard" replace />
-      },
       {
         path: "dashboard",
         element: <DashboardPage />
@@ -92,10 +90,15 @@ export const router = createBrowserRouter([
         path: "users",
         element: (
           <ProtectedRoute allowedRoles={["admin"]}>
-            <SectionPage
-              title="Users"
-              description="Role management and access control views are reserved for admin workflows."
-            />
+            <UsersPage />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "users/:id",
+        element: (
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <UserDetailPage />
           </ProtectedRoute>
         )
       },
@@ -129,5 +132,9 @@ export const router = createBrowserRouter([
         )
       }
     ]
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />
   }
 ]);

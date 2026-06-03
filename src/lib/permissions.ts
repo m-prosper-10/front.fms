@@ -69,6 +69,10 @@ export function canManageExtinguishers(role: UserRole) {
   return role === "admin" || role === "inspector";
 }
 
+export function canDeleteExtinguishers(role: UserRole) {
+  return role === "admin";
+}
+
 export function canAccessAdminArea(role: UserRole) {
   return role === "admin";
 }
