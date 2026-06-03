@@ -4,8 +4,7 @@ type StatusBadgeProps = {
   status: string;
 };
 
-const tones: Record<string, "success" | "warning" | "danger" | "info" | "muted"> =
-  {
+const tones: Record<string, "success" | "warning" | "danger" | "info" | "muted"> = {
   active: "success",
   inactive: "muted",
   expired: "danger",
@@ -19,8 +18,8 @@ const tones: Record<string, "success" | "warning" | "danger" | "info" | "muted">
   healthy: "success",
   warning: "warning",
   offline: "danger",
-    ok: "success"
-  };
+  ok: "success"
+};
 
 export function StatusBadge({ status }: StatusBadgeProps) {
   const tone = tones[status.toLowerCase()] || "muted";
