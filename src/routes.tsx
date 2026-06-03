@@ -76,7 +76,7 @@ export const router = createBrowserRouter([
       {
         path: "inspections/new",
         element: (
-          <ProtectedRoute allowedRoles={["admin", "inspector"]}>
+          <ProtectedRoute allowedRoles={["admin", "inspector", "user"]}>
             <InspectionSchedulePage />
           </ProtectedRoute>
         )

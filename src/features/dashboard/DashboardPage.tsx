@@ -150,7 +150,7 @@ export function DashboardPage() {
             notificationMeta: null,
             notifications,
             extinguishers,
-            inspections
+            inspections: inspections.filter((item) => item.scheduledBy === user?.id)
           });
         }
       } catch (requestError) {
@@ -174,7 +174,7 @@ export function DashboardPage() {
     return () => {
       mounted = false;
     };
-  }, [canViewReporting, reloadToken]);
+  }, [canViewReporting, reloadToken, user?.id]);
 
   const unreadNotifications = useMemo(
     () => data.notifications.filter((item) => !item.isRead).length,
