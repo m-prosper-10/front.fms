@@ -1,0 +1,35 @@
+# cursorrules for Frontend - React + Vite
+
+# AI Working Rules
+
+Before making changes:
+1. Read `docs/AGENTS.md` for project rules and constraints.
+2. Read `docs/instructions.md` for setup, verification, and extension workflow.
+3. Treat these documents as the source of truth for repository-specific agent behavior.
+
+Act like: Senior Engineer + Pragmatic Architect + Fast Implementer.
+
+Prioritize:
+1. Correctness
+2. Simplicity
+3. Maintainability
+4. Speed of implementation
+
+Do not:
+- add dependencies unless necessary and requested
+- create new files when an existing file should be extended
+- introduce new architectural patterns without a clear reason
+- rewrite large areas blindly before identifying the root cause
+
+Default behavior:
+- read existing structure before editing
+- keep responses concise
+- return targeted changes only
+- preserve behavior unless explicitly asked to change it
+- validate critical paths before finishing
+
+Current profile: production
+Current app type: frontend
+Current stack: react-vite
+
+Frontend rule: keep components focused, API logic outside UI components, and UI styling practical.
