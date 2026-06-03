@@ -48,6 +48,7 @@ export function NotificationsPage() {
   const [notifications, setNotifications] = useState<PublicNotification[]>([]);
   const [typeFilter, setTypeFilter] = useState<NotificationType | "all">("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -105,6 +106,10 @@ export function NotificationsPage() {
     };
   }, [reloadToken, typeFilter, user?.role]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter, search]);
+
   const filteredNotifications = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -138,6 +143,14 @@ export function NotificationsPage() {
       { label: "Read", value: Math.max(filteredNotifications.length - unreadCount, 0) }
     ],
     [filteredNotifications.length, unreadCount]
+  );
+
+  const pageSize = 10;
+  const totalPages = Math.max(Math.ceil(filteredNotifications.length / pageSize), 1);
+  const currentPage = Math.min(page, totalPages);
+  const pagedNotifications = useMemo(
+    () => filteredNotifications.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredNotifications]
   );
 
   async function refresh() {
@@ -293,7 +306,7 @@ export function NotificationsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredNotifications.map((item) => (
+              {pagedNotifications.map((item) => (
                 <tr key={item.id} className="border-b last:border-0">
                   <td className="px-6 py-4">
                     <p className="font-medium text-slate-900">{item.title}</p>
@@ -331,7 +344,36 @@ export function NotificationsPage() {
             <div className="border-t border-slate-200 px-6 py-10 text-center text-sm text-slate-500">
               No notifications matched your filters.
             </div>
-          ) : null}
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-6 py-4 text-sm text-slate-500">
+              <p>
+                Showing <span className="font-medium text-slate-900">{pagedNotifications.length}</span>{" "}
+                of <span className="font-medium text-slate-900">{filteredNotifications.length}</span>{" "}
+                notifications
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((current) => Math.max(current - 1, 1))}
+                  disabled={currentPage <= 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-xs text-slate-500">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((current) => Math.min(current + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

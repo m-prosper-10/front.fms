@@ -29,29 +29,9 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
           >
             <Menu className="h-4 w-4" />
           </Button>
-
-          <div>
-            <p className="text-sm font-medium text-slate-900">
-              Fire Safety Operations
-            </p>
-            <p className="text-xs text-slate-500">
-              Internal operations system
-            </p>
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-3 sm:flex">
-            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-right">
-              <p className="text-xs text-slate-500">Signed in as</p>
-              <p className="text-sm font-medium text-slate-900">
-                {user ? `${user.firstName} ${user.lastName}` : "User"}
-              </p>
-            </div>
-
-            <Badge tone="muted">{user?.role ?? "user"}</Badge>
-            <StatusBadge status={user?.status ?? "active"} />
-          </div>
 
           <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 sm:hidden">
             {getInitials(user?.firstName, user?.lastName)}
