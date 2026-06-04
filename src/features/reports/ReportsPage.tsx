@@ -214,6 +214,7 @@ export function ReportsPage() {
           maintenance,
           maintenanceHistory,
           maintenanceRecent,
+          inspectors
         ] = await Promise.all([
           getDashboardReport(),
           getInventoryReport(rangeInput),
@@ -252,12 +253,14 @@ export function ReportsPage() {
           inspectors
         });
       } catch (loadError) {
+        console.log(loadError)
         if (!mounted) {
           return;
         }
 
         const message =
           loadError instanceof ApiError ? loadError.message : "Failed to load reporting data";
+        
         setError(message);
       } finally {
         if (mounted) {

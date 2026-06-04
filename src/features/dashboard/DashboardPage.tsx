@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { Badge, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/button";
 import { buttonVariants } from "../../components/button";
@@ -17,6 +17,7 @@ import type { InspectionRecord } from "../inspections/inspection.types";
 import type { DashboardReport } from "../reports/reports.types";
 import type { PublicNotification } from "../notifications/notifications.types";
 import { loadNotifications, loadReportingDashboard } from "./dashboard.api";
+import { StatusBadge } from "../../components/shared/StatusBadge";
 
 type DashboardData = {
   report: DashboardReport | null;
